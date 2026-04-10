@@ -265,7 +265,7 @@ defmodule ExSepa.DirectDebit do
   end
 
   defp valid_xml(xml) do
-    {:ok, xsddoc} = File.read(Path.expand("./lib/ex_sepa/pain.008.001.08_GBIC_4.xsd"))
+    {:ok, xsddoc} = File.read(Path.expand("priv/xsd/pain.008.001.08_GBIC_4.xsd"))
     {:ok, model} = :erlsom.compile_xsd(xsddoc)
 
     case :erlsom.scan(xml, model) do
