@@ -199,7 +199,7 @@ defmodule ExSepa.CustomerDirectDebitInitiationV08 do
           :EndToEndId,
           nil,
           if transaction_information.end_to_end_id |> String.trim() == "" do
-            "NOTPROVDED"
+            "NOTPROVIDED"
           else
             transaction_information.end_to_end_id |> String.trim()
           end
