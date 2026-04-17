@@ -8,7 +8,8 @@ defmodule ExSepa.MixProject do
       elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      description: "ExSepa is an Elixir library for generating SEPA Core Direct Debits",
+      description:
+        "ExSepa is an Elixir library for generating SEPA Direct Debit and Credit Transfer XML messages",
       package: package(),
 
       # Docs

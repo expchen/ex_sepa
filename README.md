@@ -2,9 +2,9 @@
 
 > ⚠️ Work in progress, not ready for production ⚡
 
-ExSepa is an Elixir library for generating SEPA direct debits.
-The first release supports only SEPA Core Direct Debits.
-Generated XML data is validated against the XML Schema Definition (XSD) provided by the German Banking Industry.
+ExSepa is an Elixir library for generating SEPA XML messages.
+It supports SEPA Core Direct Debits and SEPA Credit Transfers.
+Generated XML data is validated against XML Schema Definitions (XSDs) provided by the German Banking Industry.
 
 ## Installation
 
