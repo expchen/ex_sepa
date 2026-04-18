@@ -1,4 +1,4 @@
-defmodule ExSepa.TransactionInformation do
+defmodule ExSepa.DirectDebit.TransactionInformation do
   @moduledoc false
   # """
   # Direct Debit Transaction Information: Provides information on the individual transaction(s) included in the message.
@@ -200,7 +200,7 @@ defmodule ExSepa.TransactionInformation do
   end
 end
 
-defmodule ExSepa.TransactionInformationError do
+defmodule ExSepa.DirectDebit.TransactionInformationError do
   @moduledoc false
   defexception [:message]
 end

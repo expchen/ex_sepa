@@ -1,9 +1,9 @@
-defmodule ExSepaTransactionInformationTest do
+defmodule ExSepa.DirectDebit.TransactionInformationTest do
   use ExUnit.Case, async: true
   import ExSepa, only: [get_eea_iban_country_codes: 0]
-  doctest ExSepa.TransactionInformation
+  doctest ExSepa.DirectDebit.TransactionInformation
 
-  describe "ExSepa.TransactionInformation new" do
+  describe "ExSepa.DirectDebit.TransactionInformation new" do
     test "ok" do
       endtoendid = Faker.Gov.Us.ssn()
       amount = Faker.Commerce.price()
@@ -12,7 +12,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -21,7 +21,7 @@ defmodule ExSepaTransactionInformationTest do
                debtor_iban: debtor_iban
              }) ==
                {:ok,
-                %ExSepa.TransactionInformation{
+                %ExSepa.DirectDebit.TransactionInformation{
                   end_to_end_id: endtoendid,
                   amount: amount,
                   mandate_id: mndt_id,
@@ -47,7 +47,7 @@ defmodule ExSepaTransactionInformationTest do
           Faker.Util.format("%#{Faker.random_between(8, 11)}A")
         )
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -57,7 +57,7 @@ defmodule ExSepaTransactionInformationTest do
                debtor_bic: debtor_bic
              }) ==
                {:ok,
-                %ExSepa.TransactionInformation{
+                %ExSepa.DirectDebit.TransactionInformation{
                   end_to_end_id: endtoendid,
                   amount: amount,
                   mandate_id: mndt_id,
@@ -85,7 +85,7 @@ defmodule ExSepaTransactionInformationTest do
 
       remittance_information = Faker.Beer.yeast()
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -96,7 +96,7 @@ defmodule ExSepaTransactionInformationTest do
                remittance_information: remittance_information
              }) ==
                {:ok,
-                %ExSepa.TransactionInformation{
+                %ExSepa.DirectDebit.TransactionInformation{
                   end_to_end_id: endtoendid,
                   amount: amount,
                   mandate_id: mndt_id,
@@ -136,7 +136,7 @@ defmodule ExSepaTransactionInformationTest do
 
       remittance_information = Faker.Beer.yeast()
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -148,7 +148,7 @@ defmodule ExSepaTransactionInformationTest do
              }) ==
                {
                  :ok,
-                 %ExSepa.TransactionInformation{
+                 %ExSepa.DirectDebit.TransactionInformation{
                    end_to_end_id: endtoendid,
                    amount: amount,
                    mandate_id: mndt_id,
@@ -183,7 +183,7 @@ defmodule ExSepaTransactionInformationTest do
       # VA not in Faker IBAN list
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -205,7 +205,7 @@ defmodule ExSepaTransactionInformationTest do
 
       assert match?(
                {:error, _},
-               ExSepa.TransactionInformation.new(%{
+               ExSepa.DirectDebit.TransactionInformation.new(%{
                  end_to_end_id: endtoendid,
                  amount: amount,
                  mandate_id: mndt_id,
@@ -224,7 +224,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -243,7 +243,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -262,7 +262,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -281,7 +281,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -300,7 +300,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -319,7 +319,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -338,7 +338,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -357,7 +357,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -376,7 +376,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -395,7 +395,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -414,7 +414,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -432,7 +432,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = 123_456_789
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -454,7 +454,7 @@ defmodule ExSepaTransactionInformationTest do
 
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -473,7 +473,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = "/" <> Faker.Person.name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -492,7 +492,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.name() <> "/"
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -511,7 +511,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_name = Faker.Person.first_name() <> " // " <> Faker.Person.last_name()
       debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -538,7 +538,7 @@ defmodule ExSepaTransactionInformationTest do
       # could be {:error, :invalid_country} or {:error, :invalid_length}
       assert match?(
                {:error, _},
-               ExSepa.TransactionInformation.new(%{
+               ExSepa.DirectDebit.TransactionInformation.new(%{
                  end_to_end_id: endtoendid,
                  amount: amount,
                  mandate_id: mndt_id,
@@ -558,7 +558,7 @@ defmodule ExSepaTransactionInformationTest do
       debtor_iban = 123_456_789
 
       # could be {:error, :invalid_country} or {:error, :invalid_length}
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -581,7 +581,7 @@ defmodule ExSepaTransactionInformationTest do
       remittance_information =
         Faker.Beer.yeast() <> Faker.Util.join(11, ", ", &Faker.Code.isbn13/0)
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -606,7 +606,7 @@ defmodule ExSepaTransactionInformationTest do
       remittance_information =
         Faker.Beer.yeast() <> Faker.Util.join(11, ", ", &Faker.Code.isbn13/0)
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -636,7 +636,7 @@ defmodule ExSepaTransactionInformationTest do
       remittance_information =
         Faker.Beer.yeast() <> Faker.Util.join(11, ", ", &Faker.Code.isbn13/0)
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,
@@ -665,7 +665,7 @@ defmodule ExSepaTransactionInformationTest do
 
       remittance_information = 123_456_789
 
-      assert ExSepa.TransactionInformation.new(%{
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
                amount: amount,
                mandate_id: mndt_id,

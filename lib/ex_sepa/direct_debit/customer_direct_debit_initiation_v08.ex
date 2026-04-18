@@ -1,4 +1,4 @@
-defmodule ExSepa.CustomerDirectDebitInitiationV08 do
+defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
   import XmlBuilder
 
   @moduledoc false
@@ -28,14 +28,14 @@ defmodule ExSepa.CustomerDirectDebitInitiationV08 do
     do: {[], number_of_transactions, control_sum}
 
   defp do_to_xml(
-         {[%ExSepa.PaymentInformation{} = first | rest], number_of_transactions, control_sum}
+         {[%ExSepa.DirectDebit.PaymentInformation{} = first | rest], number_of_transactions, control_sum}
        ) do
     if first.transaction_information != [] do
       count = length(first.transaction_information)
 
       sum =
         Float.round(
-          Enum.reduce(first.transaction_information, 0, fn %ExSepa.TransactionInformation{} = v,
+          Enum.reduce(first.transaction_information, 0, fn %ExSepa.DirectDebit.TransactionInformation{} = v,
                                                            acc ->
             v.amount + acc
           end) * 1.0,
@@ -96,7 +96,7 @@ defmodule ExSepa.CustomerDirectDebitInitiationV08 do
 
   @doc false
   defp to_xml_payment_information(
-         %ExSepa.PaymentInformation{} = payment_information,
+         %ExSepa.DirectDebit.PaymentInformation{} = payment_information,
          number_of_transactions,
          control_sum
        )
@@ -118,7 +118,7 @@ defmodule ExSepa.CustomerDirectDebitInitiationV08 do
         element(
           :SeqTp,
           nil,
-          ExSepa.PaymentInformation.get_sequenz_type_code(payment_information.sequence_type)
+          ExSepa.DirectDebit.PaymentInformation.get_sequenz_type_code(payment_information.sequence_type)
         )
         # SG: OPTIONAL! Type = CategoryPurpose1Choice
         # element(:CtgyPurp, nil, [
@@ -183,15 +183,15 @@ defmodule ExSepa.CustomerDirectDebitInitiationV08 do
   end
 
   @doc false
-  @spec to_xml_transaction_information([ExSepa.TransactionInformation.t()]) :: list()
+  @spec to_xml_transaction_information([ExSepa.DirectDebit.TransactionInformation.t()]) :: list()
   def to_xml_transaction_information([]), do: []
 
-  def to_xml_transaction_information([%ExSepa.TransactionInformation{} = first | rest]) do
+  def to_xml_transaction_information([%ExSepa.DirectDebit.TransactionInformation{} = first | rest]) do
     [do_to_xml_transaction_information(first) | to_xml_transaction_information(rest)]
   end
 
   defp do_to_xml_transaction_information(
-         %ExSepa.TransactionInformation{} = transaction_information
+         %ExSepa.DirectDebit.TransactionInformation{} = transaction_information
        ) do
     element(:DrctDbtTxInf, nil, [
       element(:PmtId, nil, [

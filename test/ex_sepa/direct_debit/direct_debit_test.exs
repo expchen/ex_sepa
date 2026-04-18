@@ -1,4 +1,4 @@
-defmodule ExSepaTest do
+defmodule ExSepa.DirectDebitTest do
   use ExUnit.Case, async: true
   import ExSepa, only: [get_eea_iban_country_codes: 0]
   doctest ExSepa.DirectDebit
@@ -119,7 +119,7 @@ defmodule ExSepaTest do
                  initiating_party_name: "Initiating Party"
                },
                payment_information: [
-                 %ExSepa.PaymentInformation{
+                 %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-001",
                    due_date: date,
                    creditor_id: "DE00ZZZ00099999999",
@@ -160,14 +160,14 @@ defmodule ExSepaTest do
                  initiating_party_name: "Initiating Party"
                },
                payment_information: [
-                 %ExSepa.PaymentInformation{
+                 %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-002",
                    due_date: date |> Date.add(2),
                    creditor_id: "DE00ZZZ00099999999",
                    creditor_name: "Creditor Name",
                    creditor_iban: "DE87200500001234567890"
                  },
-                 %ExSepa.PaymentInformation{
+                 %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-001",
                    due_date: date,
                    creditor_id: "DE00ZZZ00099999999",
@@ -187,7 +187,7 @@ defmodule ExSepaTest do
           initiating_party_name: "Initiating Party"
         })
 
-      assert_raise ExSepa.PaymentInformationError, "payment_id: Pmt-ID-001 already exists", fn ->
+      assert_raise ExSepa.DirectDebit.PaymentInformationError, "payment_id: Pmt-ID-001 already exists", fn ->
         direct_debit
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Pmt-ID-001",
@@ -250,7 +250,7 @@ defmodule ExSepaTest do
                  initiating_party_name: "Initiating Party"
                },
                payment_information: [
-                 %ExSepa.PaymentInformation{
+                 %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-001",
                    due_date: date,
                    creditor_id: "CIDZZZ00000001",
@@ -259,7 +259,7 @@ defmodule ExSepaTest do
                    creditor_bic: "BANKDEFFXXX",
                    sequence_type: :OneOff,
                    transaction_information: [
-                     %ExSepa.TransactionInformation{
+                     %ExSepa.DirectDebit.TransactionInformation{
                        end_to_end_id: "EndToEndId-0001",
                        amount: 100.01,
                        mandate_id: "Mandate-Id-01",
@@ -312,7 +312,7 @@ defmodule ExSepaTest do
           }
         )
 
-      assert_raise ExSepa.TransactionInformationError,
+      assert_raise ExSepa.DirectDebit.TransactionInformationError,
                    "BIC is mandatory for non-EEA SEPA country or territory",
                    fn ->
                      ExSepa.DirectDebit.add_transaction_information(
@@ -369,7 +369,7 @@ defmodule ExSepaTest do
                  initiating_party_name: "Initiating Party"
                },
                payment_information: [
-                 %ExSepa.PaymentInformation{
+                 %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-001",
                    due_date: date,
                    creditor_id: "DE00ZZZ00099999999",
@@ -378,7 +378,7 @@ defmodule ExSepaTest do
                    creditor_bic: "BANKDEFFXXX",
                    sequence_type: :OneOff,
                    transaction_information: [
-                     %ExSepa.TransactionInformation{
+                     %ExSepa.DirectDebit.TransactionInformation{
                        end_to_end_id: "EndToEndId-0001",
                        amount: 100.01,
                        mandate_id: "Mandate-Id-01",
@@ -451,7 +451,7 @@ defmodule ExSepaTest do
                  initiating_party_name: "Initiating Party"
                },
                payment_information: [
-                 %ExSepa.PaymentInformation{
+                 %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-001",
                    due_date: date,
                    creditor_id: "CIDZZZ00000001",
@@ -460,7 +460,7 @@ defmodule ExSepaTest do
                    creditor_bic: "",
                    sequence_type: :OneOff,
                    transaction_information: [
-                     %ExSepa.TransactionInformation{
+                     %ExSepa.DirectDebit.TransactionInformation{
                        end_to_end_id: "EndToEndId-0001",
                        amount: 100.01,
                        mandate_id: "Mandate-Id-01",
@@ -596,7 +596,7 @@ defmodule ExSepaTest do
                  msg_id: "Msg-ID-001"
                },
                payment_information: [
-                 %ExSepa.PaymentInformation{
+                 %ExSepa.DirectDebit.PaymentInformation{
                    creditor_address: nil,
                    creditor_bic: "",
                    creditor_iban: "DE87200500001234567890",
@@ -606,7 +606,7 @@ defmodule ExSepaTest do
                    payment_id: "Pmt-ID-002",
                    sequence_type: :OneOff,
                    transaction_information: [
-                     %ExSepa.TransactionInformation{
+                     %ExSepa.DirectDebit.TransactionInformation{
                        end_to_end_id: "EndToEndId-0002",
                        amount: 22.22,
                        mandate_id: "Mandate-Id-02",
@@ -632,7 +632,7 @@ defmodule ExSepaTest do
                        debtor_bic: "RAIFCH22005",
                        remittance_information: "Unstructured Remittance Information"
                      },
-                     %ExSepa.TransactionInformation{
+                     %ExSepa.DirectDebit.TransactionInformation{
                        amount: 100.01,
                        debtor_address: %ExSepa.Address{
                          building_name: nil,
@@ -660,7 +660,7 @@ defmodule ExSepaTest do
                      }
                    ]
                  },
-                 %ExSepa.PaymentInformation{
+                 %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-001",
                    due_date: date,
                    creditor_id: "CIDZZZ00000001",
@@ -670,7 +670,7 @@ defmodule ExSepaTest do
                    creditor_bic: "",
                    sequence_type: :OneOff,
                    transaction_information: [
-                     %ExSepa.TransactionInformation{
+                     %ExSepa.DirectDebit.TransactionInformation{
                        end_to_end_id: "EndToEndId-0002",
                        amount: 22.22,
                        mandate_id: "Mandate-Id-02",
@@ -696,7 +696,7 @@ defmodule ExSepaTest do
                        debtor_bic: "RAIFCH22005",
                        remittance_information: "Unstructured Remittance Information"
                      },
-                     %ExSepa.TransactionInformation{
+                     %ExSepa.DirectDebit.TransactionInformation{
                        end_to_end_id: "EndToEndId-0001",
                        amount: 100.01,
                        mandate_id: "Mandate-Id-01",
@@ -749,7 +749,7 @@ defmodule ExSepaTest do
           }
         )
 
-      assert_raise ExSepa.TransactionInformationError,
+      assert_raise ExSepa.DirectDebit.TransactionInformationError,
                    "payment_id: Pmt-ID-002 does not exists in payment information",
                    fn ->
                      ExSepa.DirectDebit.add_transaction_information(
@@ -892,7 +892,7 @@ defmodule ExSepaTest do
           debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
 
           {:ok, ti} =
-            ExSepa.TransactionInformation.new(%{
+            ExSepa.DirectDebit.TransactionInformation.new(%{
               end_to_end_id: endtoendid,
               amount: price,
               mandate_id: mndt_id,

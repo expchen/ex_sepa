@@ -88,7 +88,7 @@ defmodule ExSepa.DirectDebit do
   @typedoc false
   @type t :: %__MODULE__{
           group_header: ExSepa.GroupHeader.t(),
-          payment_information: list(ExSepa.PaymentInformation.t()) | nil
+          payment_information: list(ExSepa.DirectDebit.PaymentInformation.t()) | nil
         }
   defstruct [:group_header, :payment_information]
 
@@ -137,7 +137,7 @@ defmodule ExSepa.DirectDebit do
         payment_information
       )
       when is_map(payment_information) do
-    case ExSepa.PaymentInformation.new(payment_information) do
+    case ExSepa.DirectDebit.PaymentInformation.new(payment_information) do
       {:ok, ok_payment_information} ->
         if initiation.payment_information == nil do
           %__MODULE__{initiation | payment_information: [ok_payment_information]}
@@ -155,13 +155,13 @@ defmodule ExSepa.DirectDebit do
               }
 
             _ ->
-              raise ExSepa.PaymentInformationError,
+              raise ExSepa.DirectDebit.PaymentInformationError,
                 message: "payment_id: #{ok_payment_information.payment_id} already exists"
           end
         end
 
       {:error, e} ->
-        raise ExSepa.PaymentInformationError, message: e
+        raise ExSepa.DirectDebit.PaymentInformationError, message: e
     end
   end
 
@@ -200,17 +200,17 @@ defmodule ExSepa.DirectDebit do
       )
       when is_binary(payment_id) and is_map(transaction_information) do
     if initiation.payment_information == nil do
-      raise ExSepa.TransactionInformationError,
+      raise ExSepa.DirectDebit.TransactionInformationError,
         message:
           "There is no payment information yet. Please create one using the add_payment_information command."
     else
       case Enum.filter(initiation.payment_information, &(&1.payment_id == payment_id)) do
         [] ->
-          raise ExSepa.TransactionInformationError,
+          raise ExSepa.DirectDebit.TransactionInformationError,
             message: "payment_id: #{payment_id} does not exists in payment information"
 
         _ ->
-          case ExSepa.TransactionInformation.new(transaction_information) do
+          case ExSepa.DirectDebit.TransactionInformation.new(transaction_information) do
             {:ok, ok_transaction_information} ->
               %__MODULE__{
                 initiation
@@ -223,7 +223,7 @@ defmodule ExSepa.DirectDebit do
               }
 
             {:error, e} ->
-              raise ExSepa.TransactionInformationError, message: e
+              raise ExSepa.DirectDebit.TransactionInformationError, message: e
           end
       end
     end
@@ -233,14 +233,14 @@ defmodule ExSepa.DirectDebit do
   defp do_find_payment_information([], _pmtInfId, _txinf, acc), do: acc
 
   defp do_find_payment_information(
-         [%ExSepa.PaymentInformation{} = first | rest],
+         [%ExSepa.DirectDebit.PaymentInformation{} = first | rest],
          pmtInfId,
          txinf,
          acc
        ) do
     do_find_payment_information(rest, pmtInfId, txinf, [
       if first.payment_id == pmtInfId do
-        %ExSepa.PaymentInformation{
+        %ExSepa.DirectDebit.PaymentInformation{
           first
           | transaction_information:
               if(first.transaction_information == nil,
@@ -260,7 +260,7 @@ defmodule ExSepa.DirectDebit do
   Generates the XML data in accordance with the ISO 20022 XML message standard and validates it against the XML Schema.
   """
   def to_xml(%ExSepa.DirectDebit{} = initiation) do
-    xml = ExSepa.CustomerDirectDebitInitiationV08.to_xml(initiation)
+    xml = ExSepa.DirectDebit.CustomerDirectDebitInitiationV08.to_xml(initiation)
     valid_xml(xml)
   end
 

@@ -1,4 +1,4 @@
-defmodule ExSepa.PaymentInformation do
+defmodule ExSepa.DirectDebit.PaymentInformation do
   alias ExSepa.Validation
 
   @moduledoc false
@@ -21,7 +21,7 @@ defmodule ExSepa.PaymentInformation do
           creditor_iban: String.t(),
           creditor_bic: String.t(),
           sequence_type: sequence_type3_code_atom(),
-          transaction_information: list(ExSepa.TransactionInformation.t()) | nil
+          transaction_information: list(ExSepa.DirectDebit.TransactionInformation.t()) | nil
         }
 
   defstruct [
@@ -189,7 +189,7 @@ defmodule ExSepa.PaymentInformation do
   end
 end
 
-defmodule ExSepa.PaymentInformationError do
+defmodule ExSepa.DirectDebit.PaymentInformationError do
   @moduledoc false
   defexception [:message]
 end
