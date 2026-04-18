@@ -1,4 +1,4 @@
-defmodule ExSepaGroupHeaderTest do
+defmodule ExSepa.GroupHeaderTest do
   use ExUnit.Case, async: true
   doctest ExSepa.GroupHeader
 

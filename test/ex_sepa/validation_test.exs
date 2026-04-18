@@ -1,4 +1,4 @@
-defmodule ExSepaValidationTest do
+defmodule ExSepa.ValidationTest do
   use ExUnit.Case, async: true
   doctest ExSepa.Validation
 
