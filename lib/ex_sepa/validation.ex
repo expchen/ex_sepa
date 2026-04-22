@@ -1,4 +1,6 @@
 defmodule ExSepa.Validation do
+  alias ExSepa.CountryCodes
+
   @moduledoc false
 
   defp in_language(string, pattern) do
@@ -233,7 +235,7 @@ defmodule ExSepa.Validation do
   @spec country_code(String.t()) :: :ok | {:error, String.t()}
   def country_code(country) do
     with :ok <- do_pattern_test(country, ~r/[A-Z]{2,2}/) do
-      if Enum.member?(ExSepa.get_bic_country_codes(), country) do
+      if Enum.member?(CountryCodes.get_bic_country_codes(), country) do
         :ok
       else
         {:error, "Country code not in list!"}
@@ -262,7 +264,7 @@ defmodule ExSepa.Validation do
           :ok | {:error, String.t()}
   def address_mandatory(country, bic, address) do
     with :ok <- do_pattern_test(country, ~r/[A-Z]{2,2}/) do
-      if Enum.member?(ExSepa.get_eea_iban_country_codes(), country) do
+      if Enum.member?(CountryCodes.get_eea_iban_country_codes(), country) do
         :ok
       else
         cond do

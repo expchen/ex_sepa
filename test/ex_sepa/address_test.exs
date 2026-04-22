@@ -1,6 +1,6 @@
 defmodule ExSepa.AddressTest do
   use ExUnit.Case, async: true
-  import ExSepa, only: [get_bic_country_codes: 0]
+  import ExSepa.CountryCodes, only: [get_bic_country_codes: 0]
   doctest ExSepa.Address
 
   describe "ExSepa.Address new " do

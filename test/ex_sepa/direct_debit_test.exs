@@ -1,6 +1,6 @@
 defmodule ExSepa.DirectDebitTest do
   use ExUnit.Case, async: true
-  import ExSepa, only: [get_eea_iban_country_codes: 0]
+  import ExSepa.CountryCodes, only: [get_eea_iban_country_codes: 0]
   doctest ExSepa.DirectDebit
 
   describe "ExSepa.DirectDebit new Initiation Message" do

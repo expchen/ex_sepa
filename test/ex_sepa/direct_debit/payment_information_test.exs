@@ -1,6 +1,6 @@
 defmodule ExSepa.DirectDebit.PaymentInformationTest do
   use ExUnit.Case, async: true
-  import ExSepa, only: [get_eea_iban_country_codes: 0]
+  import ExSepa.CountryCodes, only: [get_eea_iban_country_codes: 0]
   doctest ExSepa.DirectDebit.PaymentInformation
 
   describe "ExSepa.DirectDebit.PaymentInformation new" do
