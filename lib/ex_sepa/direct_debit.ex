@@ -277,8 +277,3 @@ defmodule ExSepa.DirectDebit do
     end
   end
 end
-
-defmodule ExSepa.XmlError do
-  @moduledoc false
-  defexception [:message]
-end
