@@ -1,8 +1,8 @@
 defmodule ExSepa.DirectDebit do
   @moduledoc """
-  This library is based on the structure of the SEPA Core Direct Debit Scheme.
-  The direct debit initiation message is sent by the initiating party to the creditor's intermediary or agent.
-  It is used to request a single or batch collection(s) of funds from one or more debtor accounts on behalf of a creditor.
+  This module is based on the structure of the SEPA Core Direct Debit Scheme.
+  The Direct Debit initiation message is sent by the initiating party to the creditor's intermediary or agent.
+  It is used to request single or bulk collection(s) of funds from one or more debtor account(s) on behalf of a creditor.
 
   ## Example 1
 
@@ -265,7 +265,7 @@ defmodule ExSepa.DirectDebit do
   end
 
   defp valid_xml(xml) do
-    {:ok, xsddoc} = File.read(Path.expand("priv/xsd/pain.008.001.08_GBIC_4.xsd"))
+    {:ok, xsddoc} = File.read(Path.expand("priv/xsd/pain.008.001.08_GBIC_5.xsd"))
     {:ok, model} = :erlsom.compile_xsd(xsddoc)
 
     case :erlsom.scan(xml, model) do

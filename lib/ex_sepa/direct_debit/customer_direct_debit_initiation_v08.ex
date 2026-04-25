@@ -104,7 +104,7 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
     element(:PmtInf, nil, [
       element(:PmtInfId, nil, payment_information.payment_id),
       element(:PmtMtd, nil, "DD"),
-      # SG: OPTIONAL! TYPE = BatchBookingIndicator -> If present and contains "true", batch booking is requested. If present and contains "false", booking per transaction is requested. If element is not present, pre-agreed customer-to-PSP conditions apply.
+      # EPC: OPTIONAL! If present and contains "true", batch booking is requested. If present and contains "false", booking per transaction is requested. If element is not present, pre-agreed customer-to-PSP conditions apply.
       # element(:BtchBookg, nil, btchBookg)
       element(:NbOfTxs, nil, number_of_transactions),
       element(:CtrlSum, nil, control_sum),
@@ -120,11 +120,11 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
           nil,
           ExSepa.DirectDebit.PaymentInformation.get_sequenz_type_code(payment_information.sequence_type)
         )
-        # SG: OPTIONAL! Type = CategoryPurpose1Choice
+        # XSD: OPTIONAL! Type = CategoryPurpose1Choice
         # element(:CtgyPurp, nil, [
-        # SG: Type = ExternalCategoryPurpose1Code
+        # XSD: Type = ExternalCategoryPurpose1Code
         # element(:Cd, nil, ctgyPurpCd),
-        # SG: Type = Max35Text -> Length 1 .. 35
+        # XSD: Type = Max35Text -> Length 1 .. 35
         # element(:Prtry, nil, ctgyPurpPrtry)
         # ])
       ]),
@@ -138,7 +138,7 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
       element(:CdtrAcct, nil, [
         element(:Id, nil, [
           element(:IBAN, nil, payment_information.creditor_iban)
-          # SG: OPTIONAL! Type = ActiveOrHistoricCurrencyCode -> Pattern = [A-Z]{3,3}
+          # XSD: OPTIONAL! Type = ActiveOrHistoricCurrencyCode -> Pattern = [A-Z]{3,3}
           # element(:Ccy, nil, cdtrAcctCcy)
         ])
       ]),
@@ -153,15 +153,15 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
           end
         ])
       ]),
-      # SG: OPTIONAL! Type = PartyIdentification135 -> This data element may be present either at 'Payment Information' or at 'Direct Debit Transaction Information' level.
+      # EPC: OPTIONAL! This data element may be present either at 'Payment Information' or at 'Direct Debit Transaction Information' level.
       # element(:UltmtCdtr, nil, [
-      # SG: Type = Max140Text  -> Length 1 .. 70 -> AT-E007 The Name of the Creditor Reference Party.
+      # EPC: AT-E007 The Name of the Creditor Reference Party.
       # element(:Nm, nil, ultmtcreditor_name)
-      # SG: OPTIONAL! Type = Party38Choice
+      # XSD: OPTIONAL! Type = Party38Choice
       # element(:Id, nil, [
-      # SG: xs:choice! Type = OrganisationIdentification29 -> Either ‘AnyBIC’, 'LEI' or one occurrence of ‘Other’ is allowed.
+      # XSD: xs:choice! Type = OrganisationIdentification29 -> Either 'AnyBIC', 'LEI' or one occurrence of 'Other' is allowed.
       # initgPtyId = element(:OrgId, nil, initgPtyIdOrgId)
-      # SG: xs:choice! Type = PersonIdentification13 -> Either ‘Date and Place of Birth’ or one occurrence of ‘Other’ is allowed.
+      # XSD: xs:choice! Type = PersonIdentification13 -> Either 'Date and Place of Birth' or one occurrence of 'Other' is allowed.
       # initgPtyId = element(:PrvtId, nil, initgPtyIdPrvtId)
       # ])
       # ]),
