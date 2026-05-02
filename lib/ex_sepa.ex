@@ -6,6 +6,7 @@ defmodule ExSepa do
 
     * `ExSepa.DirectDebit` - SEPA Core Direct Debit (`pain.008.001.08`)
     * `ExSepa.CreditTransfer` - SEPA Credit Transfer (`pain.001.001.09`)
+    * `ExSepa.CreditTransferInstant` - SEPA Instant Credit Transfer (`pain.001.001.09` with `INST`)
 
   """
 
@@ -191,5 +192,95 @@ defmodule ExSepa do
       remittance_information: "Invoice Example 0003"
     })
     |> ExSepa.CreditTransfer.to_xml()
+  end
+
+  @doc false
+  def credit_transfer_instant_example_one do
+    credit_transfer =
+      ExSepa.CreditTransferInstant.new(%{
+        msg_id: "Msg-ID-001",
+        initiating_party_name: "Initiating Party"
+      })
+
+    credit_transfer =
+      ExSepa.CreditTransferInstant.add_payment_information(
+        credit_transfer,
+        %{
+          payment_id: "Payment-ID-0001",
+          requested_execution_date: DateTime.utc_now() |> DateTime.add(60, :second),
+          instruction_priority: :High,
+          debtor_name: "Debtor Name",
+          debtor_iban: "DE87200500001234567890"
+        }
+      )
+
+    credit_transfer =
+      ExSepa.CreditTransferInstant.add_transaction_information(
+        credit_transfer,
+        "Payment-ID-0001",
+        %{
+          end_to_end_id: "EndToEndId-0001",
+          amount: 100.01,
+          creditor_name: "Creditor Name",
+          creditor_iban: "DE88100900001234567892",
+          remittance_information: "Invoice Example 0001"
+        }
+      )
+
+    ExSepa.CreditTransferInstant.to_xml(credit_transfer)
+  end
+
+  @doc false
+  def credit_transfer_instant_example_two do
+    # Use the pipe operator
+    credit_transfer =
+      ExSepa.CreditTransferInstant.new(%{
+        msg_id: "Msg-ID-002",
+        initiating_party_name: "Initiating Party"
+      })
+
+    credit_transfer
+    |> ExSepa.CreditTransferInstant.add_payment_information(%{
+      payment_id: "Payment-ID-0002",
+      requested_execution_date: Date.utc_today(),
+      debtor_name: "Debtor Name",
+      debtor_iban: "DE87200500001234567890"
+    })
+    |> ExSepa.CreditTransferInstant.add_transaction_information("Payment-ID-0002", %{
+      end_to_end_id: "EndToEndId-0002",
+      amount: 202.22,
+      creditor_name: "Creditor Name",
+      creditor_iban: "NL62PXVC6402395035",
+      remittance_information: "Invoice Example 0002"
+    })
+    |> ExSepa.CreditTransferInstant.to_xml()
+  end
+
+  @doc false
+  def credit_transfer_instant_example_three do
+    # With creditor address
+    credit_transfer =
+      ExSepa.CreditTransferInstant.new(%{
+        msg_id: "Msg-ID-003",
+        initiating_party_name: "Initiating Party"
+      })
+
+    credit_transfer
+    |> ExSepa.CreditTransferInstant.add_payment_information(%{
+      payment_id: "Payment-ID-0003",
+      requested_execution_date: Date.utc_today(),
+      debtor_name: "Debtor Name",
+      debtor_iban: "DE87200500001234567890"
+    })
+    |> ExSepa.CreditTransferInstant.add_transaction_information("Payment-ID-0003", %{
+      end_to_end_id: "EndToEndId-0003",
+      amount: 330.30,
+      creditor_name: "Creditor Name",
+      creditor_iban: "AD6510434606G73BA76MI9TE",
+      creditor_bic: "CASBADADXXX",
+      creditor_address: %{town_name: "Andorra la Vella", country: "AD"},
+      remittance_information: "Invoice Example 0003"
+    })
+    |> ExSepa.CreditTransferInstant.to_xml()
   end
 end
