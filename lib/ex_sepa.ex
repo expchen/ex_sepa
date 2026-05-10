@@ -76,7 +76,7 @@ defmodule ExSepa do
 
   @doc false
   def direct_debit_example_three do
-    # With debtor address
+    # With debtor hybrid address
     direct_debit =
       ExSepa.DirectDebit.new(%{msg_id: "Msg-ID-003", initiating_party_name: "Initiating Party"})
 
@@ -98,7 +98,11 @@ defmodule ExSepa do
         debtor_name: "Debtor Name",
         debtor_iban: "AD6510434606G73BA76MI9TE",
         debtor_bic: "CASBADADXXX",
-        debtor_address: %{town_name: "Andorra la Vella", country: "AD"},
+        debtor_address: %{
+          town_name: "Andorra la Vella",
+          country: "AD",
+          address_lines: ["Carrer de la Vall 1", "Edifici Central"]
+        },
         remittance_information: "Invoice Example 0003"
       }
     )
@@ -168,7 +172,7 @@ defmodule ExSepa do
 
   @doc false
   def credit_transfer_example_three do
-    # With creditor address
+    # With creditor hybrid address
     credit_transfer =
       ExSepa.CreditTransfer.new(%{
         msg_id: "Msg-ID-003",
@@ -188,7 +192,11 @@ defmodule ExSepa do
       creditor_name: "Creditor Name",
       creditor_iban: "AD6510434606G73BA76MI9TE",
       creditor_bic: "CASBADADXXX",
-      creditor_address: %{town_name: "Andorra la Vella", country: "AD"},
+      creditor_address: %{
+        town_name: "München",
+        country: "DE",
+        address_lines: ["Leopoldstraße 50", "80302 München"]
+      },
       remittance_information: "Invoice Example 0003"
     })
     |> ExSepa.CreditTransfer.to_xml()
@@ -258,7 +266,7 @@ defmodule ExSepa do
 
   @doc false
   def credit_transfer_instant_example_three do
-    # With creditor address
+    # With creditor hybrid address
     credit_transfer =
       ExSepa.CreditTransferInstant.new(%{
         msg_id: "Msg-ID-003",
@@ -278,7 +286,11 @@ defmodule ExSepa do
       creditor_name: "Creditor Name",
       creditor_iban: "AD6510434606G73BA76MI9TE",
       creditor_bic: "CASBADADXXX",
-      creditor_address: %{town_name: "Andorra la Vella", country: "AD"},
+      creditor_address: %{
+        town_name: "Berlin",
+        country: "DE",
+        address_lines: ["Friedrichstraße 123", "10117 Berlin"]
+      },
       remittance_information: "Invoice Example 0003"
     })
     |> ExSepa.CreditTransferInstant.to_xml()

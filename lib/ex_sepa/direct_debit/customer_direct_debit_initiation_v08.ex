@@ -12,14 +12,14 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
   @doc false
   @spec to_xml(ExSepa.DirectDebit.t()) :: String.t()
   def to_xml(%ExSepa.DirectDebit{} = direct_debit) do
-    {info, number_of_transactions, control_sum} =
+    {payment_information_xml, number_of_transactions, control_sum} =
       do_to_xml({direct_debit.payment_information, 0, 0.0})
 
     xb_document(
       element(:CstmrDrctDbtInitn, nil, [
         direct_debit.group_header
         |> to_xml_group_header(number_of_transactions, control_sum)
-        | info
+        | payment_information_xml
       ])
     )
   end
@@ -28,17 +28,21 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
     do: {[], number_of_transactions, control_sum}
 
   defp do_to_xml(
-         {[%ExSepa.DirectDebit.PaymentInformation{} = first | rest], number_of_transactions, control_sum}
+         {[%ExSepa.DirectDebit.PaymentInformation{} = first | rest], number_of_transactions,
+          control_sum}
        ) do
     if first.transaction_information != [] do
       count = length(first.transaction_information)
 
       sum =
         Float.round(
-          Enum.reduce(first.transaction_information, 0, fn %ExSepa.DirectDebit.TransactionInformation{} = v,
-                                                           acc ->
-            v.amount + acc
-          end) * 1.0,
+          Enum.reduce(
+            first.transaction_information,
+            0,
+            fn %ExSepa.DirectDebit.TransactionInformation{} = v, acc ->
+              v.amount + acc
+            end
+          ) * 1.0,
           2
         )
 
@@ -54,10 +58,7 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
          | new_rest
        ], new_number_of_transactions, new_control_sum}
     else
-      {new_rest, new_number_of_transactions, new_control_sum} =
-        do_to_xml({rest, number_of_transactions, control_sum})
-
-      {[new_rest], new_number_of_transactions, new_control_sum}
+      do_to_xml({rest, number_of_transactions, control_sum})
     end
   end
 
@@ -118,7 +119,9 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
         element(
           :SeqTp,
           nil,
-          ExSepa.DirectDebit.PaymentInformation.get_sequenz_type_code(payment_information.sequence_type)
+          ExSepa.DirectDebit.PaymentInformation.get_sequenz_type_code(
+            payment_information.sequence_type
+          )
         )
         # XSD: OPTIONAL! Type = CategoryPurpose1Choice
         # element(:CtgyPurp, nil, [
@@ -186,7 +189,9 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
   @spec to_xml_transaction_information([ExSepa.DirectDebit.TransactionInformation.t()]) :: list()
   def to_xml_transaction_information([]), do: []
 
-  def to_xml_transaction_information([%ExSepa.DirectDebit.TransactionInformation{} = first | rest]) do
+  def to_xml_transaction_information([
+        %ExSepa.DirectDebit.TransactionInformation{} = first | rest
+      ]) do
     [do_to_xml_transaction_information(first) | to_xml_transaction_information(rest)]
   end
 
@@ -242,46 +247,5 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
 
   @doc false
   @spec to_xml_address(ExSepa.Address.t()) :: {atom(), any(), any()}
-  def to_xml_address(%ExSepa.Address{} = address_map) do
-    element(:PstlAdr, nil, [
-      if address_map.department != nil do
-        element(:Dept, nil, address_map.department)
-      end,
-      if address_map.sub_department != nil do
-        element(:SubDept, nil, address_map.sub_department)
-      end,
-      if address_map.street_name != nil do
-        element(:StrtNm, nil, address_map.street_name)
-      end,
-      if address_map.building_number != nil do
-        element(:BldgNb, nil, address_map.building_number)
-      end,
-      if address_map.building_name != nil do
-        element(:BldgNm, nil, address_map.building_name)
-      end,
-      if address_map.floor != nil do
-        element(:Flr, nil, address_map.floor)
-      end,
-      if address_map.post_box != nil do
-        element(:PstBx, nil, address_map.post_box)
-      end,
-      if address_map.room != nil do
-        element(:Room, nil, address_map.room)
-      end,
-      if address_map.post_code != nil do
-        element(:PstCd, nil, address_map.post_code)
-      end,
-      element(:TwnNm, nil, address_map.town_name),
-      if address_map.town_location_name != nil do
-        element(:TwnLctnNm, nil, address_map.town_location_name)
-      end,
-      if address_map.district_name != nil do
-        element(:DstrctNm, nil, address_map.district_name)
-      end,
-      if address_map.country_sub_division != nil do
-        element(:CtrySubDvsn, nil, address_map.country_sub_division)
-      end,
-      element(:Ctry, nil, address_map.country)
-    ])
-  end
+  def to_xml_address(%ExSepa.Address{} = address_map), do: ExSepa.Address.to_xml(address_map)
 end

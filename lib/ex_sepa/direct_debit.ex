@@ -122,7 +122,7 @@ defmodule ExSepa.DirectDebit do
     * `:creditor_iban` - The account number (IBAN) of the Creditor.
     * `:creditor_bic` - OPTIONAL: BIC code of the Creditor PSP.
     * `:sequence_type` - OPTIONAL: Identifies the direct debit sequence, such as one-off, first, recurrent or final ("OOFF", "FRST", "RCUR" or "FNAL"). The default is 'one-off'.
-    * `:creditor_address` - OPTIONAL: Structured address. At least `:town_name` and `:country` must be used. More details in `ExSepa.Address`.
+    * `:creditor_address` - OPTIONAL: Structured or hybrid address. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
   """
   @spec add_payment_information(ExSepa.DirectDebit.t(), %{
           :creditor_iban => String.t(),
@@ -177,7 +177,7 @@ defmodule ExSepa.DirectDebit do
     * `:debtor_name` - The Name of the Debtor (maximum length of 70 characters).
     * `:debtor_iban` - The account number (IBAN) of the Debtor.
     * `:debtor_bic` - OPTIONAL: BIC code of the Debtor PSP. Only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory.
-    * `:debtor_address` - OPTIONAL: Structured address. Only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. More details in `ExSepa.Address`.
+    * `:debtor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
     * `:remittance_information` - OPTIONAL: The Remittance information sent by the Creditor to the Debtor in the Collection (maximum length of 140 characters).
   """
   @spec add_transaction_information(

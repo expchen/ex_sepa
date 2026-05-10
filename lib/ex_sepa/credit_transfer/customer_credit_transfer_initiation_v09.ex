@@ -147,7 +147,11 @@ defmodule ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09 do
   end
 
   @doc false
-  def to_xml_group_header(%ExSepa.GroupHeader{} = group_header, number_of_transactions, control_sum) do
+  def to_xml_group_header(
+        %ExSepa.GroupHeader{} = group_header,
+        number_of_transactions,
+        control_sum
+      ) do
     element(:GrpHdr, nil, [
       element(:MsgId, nil, group_header.msg_id),
       element(:CreDtTm, nil, DateTime.to_iso8601(DateTime.utc_now(:second))),
@@ -218,48 +222,7 @@ defmodule ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09 do
 
   @doc false
   @spec to_xml_address(ExSepa.Address.t()) :: {atom(), any(), any()}
-  def to_xml_address(%ExSepa.Address{} = address_map) do
-    element(:PstlAdr, nil, [
-      if address_map.department != nil do
-        element(:Dept, nil, address_map.department)
-      end,
-      if address_map.sub_department != nil do
-        element(:SubDept, nil, address_map.sub_department)
-      end,
-      if address_map.street_name != nil do
-        element(:StrtNm, nil, address_map.street_name)
-      end,
-      if address_map.building_number != nil do
-        element(:BldgNb, nil, address_map.building_number)
-      end,
-      if address_map.building_name != nil do
-        element(:BldgNm, nil, address_map.building_name)
-      end,
-      if address_map.floor != nil do
-        element(:Flr, nil, address_map.floor)
-      end,
-      if address_map.post_box != nil do
-        element(:PstBx, nil, address_map.post_box)
-      end,
-      if address_map.room != nil do
-        element(:Room, nil, address_map.room)
-      end,
-      if address_map.post_code != nil do
-        element(:PstCd, nil, address_map.post_code)
-      end,
-      element(:TwnNm, nil, address_map.town_name),
-      if address_map.town_location_name != nil do
-        element(:TwnLctnNm, nil, address_map.town_location_name)
-      end,
-      if address_map.district_name != nil do
-        element(:DstrctNm, nil, address_map.district_name)
-      end,
-      if address_map.country_sub_division != nil do
-        element(:CtrySubDvsn, nil, address_map.country_sub_division)
-      end,
-      element(:Ctry, nil, address_map.country)
-    ])
-  end
+  def to_xml_address(%ExSepa.Address{} = address_map), do: ExSepa.Address.to_xml(address_map)
 
   defp to_xml_requested_execution_date(%Date{} = date, _scheme), do: element(:Dt, nil, date)
 

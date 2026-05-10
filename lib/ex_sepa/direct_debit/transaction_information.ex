@@ -50,7 +50,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
   #   * `:debtor_name` - The Name of the Debtor (maximum length of 70 characters).
   #   * `:debtor_iban` - The account number (IBAN) of the Debtor.
   #   * `:debtor_bic` - OPTIONAL: BIC code of the Debtor PSP. Only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory.
-  #   * `:debtor_address` - OPTIONAL: Structured address. Only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. More details in `ExSepa.Address`.
+  #   * `:debtor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
   #   * `:remittance_information` - OPTIONAL: The Remittance information sent by the Creditor to the Debtor in the Collection (maximum length of 140 characters).
   # """
   @spec new(%{
@@ -129,7 +129,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
       )
       when is_binary(end_to_end_id) and is_binary(mandate_id) and
              is_binary(debtor_name) and is_binary(debtor_iban) do
-    {:error, "amount must be a float(18.2)"}
+    {:error, "amount must be a positive number with up to 2 decimal places, e.g. 18.2 or 18.02"}
   end
 
   def new(transaction_information) do

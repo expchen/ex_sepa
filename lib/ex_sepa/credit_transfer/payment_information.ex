@@ -41,7 +41,7 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
   #   * `:debtor_name` - The Name of the Debtor / Originator (maximum length of 70 characters).
   #   * `:debtor_iban` - The account number (IBAN) of the Debtor / Originator.
   #   * `:debtor_bic` - OPTIONAL: BIC code of the Debtor PSP. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory.
-  #   * `:debtor_address` - OPTIONAL: Structured address. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. More details in `ExSepa.Address`.
+  #   * `:debtor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
   # """
   @spec new(%{
           :payment_id => String.t(),
@@ -67,11 +67,11 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
           debtor_iban: debtor_iban
         } = payment_information
       )
+      # SCT
+      # SCT Inst
       when scheme in [:sct, :sct_inst] and
              is_binary(payment_id) and is_binary(debtor_name) and is_binary(debtor_iban) and
-            # SCT
              ((scheme == :sct and is_struct(requested_execution_date, Date)) or
-            # SCT Inst
                 (scheme == :sct_inst and
                    (is_struct(requested_execution_date, Date) or
                       is_struct(requested_execution_date, DateTime)))) do
@@ -117,7 +117,8 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
     {:error,
      if(scheme == :sct,
        do: "Parameter requested_execution_date must be a date",
-       else: "Parameter requested_execution_date must be a date or datetime")}
+       else: "Parameter requested_execution_date must be a date or datetime"
+     )}
   end
 
   def build(_scheme, _module, enforce_keys, payment_information) do
@@ -222,8 +223,11 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
     case Map.fetch(payment_information, :instruction_priority) do
       {:ok, instruction_priority} when is_atom(instruction_priority) ->
         case Map.fetch(@instruction_priorities, instruction_priority) do
-          {:ok, value} -> {:ok, value}
-          :error -> {:error, "instruction_priority: must be one of [:High, :Normal, \"HIGH\", \"NORM\"]"}
+          {:ok, value} ->
+            {:ok, value}
+
+          :error ->
+            {:error, "instruction_priority: must be one of [:High, :Normal, \"HIGH\", \"NORM\"]"}
         end
 
       {:ok, "HIGH"} ->
@@ -264,7 +268,8 @@ defmodule ExSepa.CreditTransferInstant.PaymentInformation do
           debtor_address: ExSepa.Address.t() | nil,
           debtor_iban: String.t(),
           debtor_bic: String.t(),
-          transaction_information: list(ExSepa.CreditTransferInstant.TransactionInformation.t()) | nil
+          transaction_information:
+            list(ExSepa.CreditTransferInstant.TransactionInformation.t()) | nil
         }
 
   defstruct [
@@ -290,7 +295,7 @@ defmodule ExSepa.CreditTransferInstant.PaymentInformation do
   #   * `:debtor_name` - The Name of the Debtor / Originator (maximum length of 70 characters).
   #   * `:debtor_iban` - The account number (IBAN) of the Debtor / Originator.
   #   * `:debtor_bic` - OPTIONAL: BIC code of the Debtor PSP. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory.
-  #   * `:debtor_address` - OPTIONAL: Structured address. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. More details in `ExSepa.Address`.
+  #   * `:debtor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
   # """
   @spec new(%{
           :payment_id => String.t(),

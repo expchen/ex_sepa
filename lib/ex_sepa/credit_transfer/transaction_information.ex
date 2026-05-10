@@ -39,7 +39,7 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
   #   * `:creditor_name` - The Name of the Creditor / Beneficiary (maximum length of 70 characters).
   #   * `:creditor_iban` - The account number (IBAN) of the Creditor / Beneficiary.
   #   * `:creditor_bic` - OPTIONAL: BIC code of the Creditor PSP. Only mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. If empty, `CdtrAgt` is not used in the generated XML.
-  #   * `:creditor_address` - OPTIONAL: Structured address. Only mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. More details in `ExSepa.Address`.
+  #   * `:creditor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
   #   * `:remittance_information` - OPTIONAL: The Remittance Information sent by the Originator to the Beneficiary (maximum length of 140 characters). If empty, `RmtInf` is not used in the generated XML.
   # """
   @spec new(%{
@@ -93,7 +93,8 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
         creditor_iban: creditor_iban
       }
       when is_binary(end_to_end_id) and is_binary(creditor_name) and is_binary(creditor_iban) ->
-        {:error, "amount must be a positive number with up to 2 decimal places, e.g. 18.2 or 18.02"}
+        {:error,
+         "amount must be a positive number with up to 2 decimal places, e.g. 18.2 or 18.02"}
 
       _ ->
         missing_keys = enforce_keys -- Map.keys(transaction_information)
@@ -209,7 +210,7 @@ defmodule ExSepa.CreditTransferInstant.TransactionInformation do
   #   * `:creditor_name` - The Name of the Creditor / Beneficiary (maximum length of 70 characters).
   #   * `:creditor_iban` - The account number (IBAN) of the Creditor / Beneficiary.
   #   * `:creditor_bic` - OPTIONAL: BIC code of the Creditor PSP. Only mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. If empty, `CdtrAgt` is not used in the generated XML.
-  #   * `:creditor_address` - OPTIONAL: Structured address. Only mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. More details in `ExSepa.Address`.
+  #   * `:creditor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
   #   * `:remittance_information` - OPTIONAL: The Remittance Information sent by the Originator to the Beneficiary (maximum length of 140 characters). If empty, `RmtInf` is not used in the generated XML.
   # """
   @spec new(%{

@@ -49,7 +49,7 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
   #   * `:creditor_iban` - The account number (IBAN) of the Creditor.
   #   * `:creditor_bic` - OPTIONAL: BIC code of the Creditor PSP.
   #   * `:sequence_type` - OPTIONAL: Identifies the direct debit sequence, such as one-off, first, recurrent or final ("OOFF", "FRST", "RCUR" or "FNAL").
-  #   * `:creditor_address` - OPTIONAL: Structured address. At least `:town_name` and `:country` must be used. More details in `ExSepa.Address`.
+  #   * `:creditor_address` - OPTIONAL: Structured or hybrid address. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
   # """
   @spec new(%{
           :payment_id => String.t(),

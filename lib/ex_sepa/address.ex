@@ -1,14 +1,16 @@
 defmodule ExSepa.Address do
+  import XmlBuilder
   alias ExSepa.Validation
 
   @moduledoc """
-  Postal Address: In the case of address information, this must be structured.
+  Postal Address: Structured and hybrid addresses are supported.
   """
 
   @enforce_keys [:town_name, :country]
   @typedoc """
   Address information are only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory.
   At least `:town_name` and `:country` must be used.
+  Hybrid addresses can additionally use up to two `:address_lines`.
 
   The map has the following keys:
     * `:town_name` Name of a built-up area, with defined boundaries, and a local government (maximum length of 35 characters).
@@ -25,6 +27,7 @@ defmodule ExSepa.Address do
     * `:town_location_name` OPTIONAL: Specific location name within the town (maximum length of 35 characters).
     * `:district_name` OPTIONAL: Identifies a subdivision within a country subdivision (maximum length of 35 characters).
     * `:country_sub_division` OPTIONAL: Identifies a subdivision of a country such as state, region, county (maximum length of 35 characters).
+    * `:address_lines` OPTIONAL: Up to two address lines for a hybrid address (maximum length of 70 characters per line).
 
   ## Example
 
@@ -64,7 +67,8 @@ defmodule ExSepa.Address do
           town_location_name: String.t(),
           district_name: String.t(),
           country_sub_division: String.t(),
-          country: String.t()
+          country: String.t(),
+          address_lines: list(String.t()) | nil
         }
   defstruct [
     :department,
@@ -80,7 +84,8 @@ defmodule ExSepa.Address do
     :town_location_name,
     :district_name,
     :country_sub_division,
-    :country
+    :country,
+    :address_lines
   ]
 
   @doc false
@@ -106,28 +111,29 @@ defmodule ExSepa.Address do
          post_code: optional_data.post_code,
          town_location_name: optional_data.town_location_name,
          district_name: optional_data.district_name,
-         country_sub_division: optional_data.country_sub_division
+         country_sub_division: optional_data.country_sub_division,
+         address_lines: optional_data.address_lines
        }}
     end
   end
 
-  def new(address_map) do
-    if Map.has_key?(address_map, :town_name) do
-      if Map.has_key?(address_map, :country) do
-        Validation.text(
-          [
-            {:town_name, address_map[:town_name]},
-            {:country, address_map[:country]}
-          ],
-          "Parameters must be strings."
-        )
-      else
-        {:error, "key :country is missing"}
-      end
+  def new(address_map) when is_map(address_map) do
+    missing_keys = @enforce_keys -- Map.keys(address_map)
+
+    if missing_keys == [] do
+      Validation.text(
+        [
+          {:town_name, address_map[:town_name]},
+          {:country, address_map[:country]}
+        ],
+        "Parameters must be strings."
+      )
     else
-      {:error, "key :town_name is missing"}
+      {:error, "missing keys: " <> Macro.to_string(quote do: unquote(missing_keys))}
     end
   end
+
+  def new(_address), do: {:error, "address: must be a map"}
 
   defp get_optional_data(payment_information) do
     with {:ok, department} <- get_text(payment_information, :department, 70),
@@ -141,7 +147,8 @@ defmodule ExSepa.Address do
          {:ok, post_code} <- get_text(payment_information, :post_code, 16),
          {:ok, town_location_name} <- get_text(payment_information, :town_location_name, 35),
          {:ok, district_name} <- get_text(payment_information, :district_name, 35),
-         {:ok, country_sub_division} <- get_text(payment_information, :country_sub_division, 35) do
+         {:ok, country_sub_division} <- get_text(payment_information, :country_sub_division, 35),
+         {:ok, address_lines} <- get_address_lines(payment_information) do
       {:ok,
        %{
          department: department,
@@ -155,7 +162,8 @@ defmodule ExSepa.Address do
          post_code: post_code,
          town_location_name: town_location_name,
          district_name: district_name,
-         country_sub_division: country_sub_division
+         country_sub_division: country_sub_division,
+         address_lines: address_lines
        }}
     end
   end
@@ -173,6 +181,44 @@ defmodule ExSepa.Address do
     end
   end
 
+  defp get_address_lines(payment_information) do
+    case Map.fetch(payment_information, :address_lines) do
+      {:ok, address_lines} when is_list(address_lines) ->
+        validate_address_lines(address_lines)
+
+      {:ok, _address_lines} ->
+        {:error, "address_lines: must be a list"}
+
+      :error ->
+        {:ok, nil}
+    end
+  end
+
+  defp validate_address_lines([]), do: {:error, "address_lines: must contain 1 or 2 lines"}
+
+  defp validate_address_lines(address_lines) when length(address_lines) > 2,
+    do: {:error, "address_lines: must contain at most 2 lines"}
+
+  defp validate_address_lines(address_lines) do
+    Enum.reduce_while(Enum.with_index(address_lines), {:ok, []}, fn {line, index}, {:ok, acc} ->
+      case validate_address_line(line, index) do
+        {:ok, normalized_line} -> {:cont, {:ok, acc ++ [normalized_line]}}
+        {:error, error} -> {:halt, {:error, error}}
+      end
+    end)
+  end
+
+  defp validate_address_line(line, _index) when is_binary(line) do
+    Validation.max_text(:address_lines, line, 70)
+  end
+
+  defp validate_address_line(line, index) do
+    Validation.text(
+      [{:"address_lines[#{index}]", line}],
+      "Parameters must be strings."
+    )
+  end
+
   @doc false
   # """
   # Searches for the address of the creditor or debtor in the transferred map and returns it in a structured form.
@@ -186,11 +232,59 @@ defmodule ExSepa.Address do
       {:ok, address} when is_map(address) ->
         ExSepa.Address.new(address)
 
-      {:ok, address} ->
-        Validation.text([{address_atom, address}], "Parameters must be strings.")
+      {:ok, _address} ->
+        {:error, "#{address_atom}: must be a map"}
 
       :error ->
         {:ok, nil}
     end
+  end
+
+  @doc false
+  @spec to_xml(ExSepa.Address.t()) :: {atom(), any(), any()}
+  def to_xml(%ExSepa.Address{} = address_map) do
+    element(:PstlAdr, nil, [
+      if address_map.department != nil do
+        element(:Dept, nil, address_map.department)
+      end,
+      if address_map.sub_department != nil do
+        element(:SubDept, nil, address_map.sub_department)
+      end,
+      if address_map.street_name != nil do
+        element(:StrtNm, nil, address_map.street_name)
+      end,
+      if address_map.building_number != nil do
+        element(:BldgNb, nil, address_map.building_number)
+      end,
+      if address_map.building_name != nil do
+        element(:BldgNm, nil, address_map.building_name)
+      end,
+      if address_map.floor != nil do
+        element(:Flr, nil, address_map.floor)
+      end,
+      if address_map.post_box != nil do
+        element(:PstBx, nil, address_map.post_box)
+      end,
+      if address_map.room != nil do
+        element(:Room, nil, address_map.room)
+      end,
+      if address_map.post_code != nil do
+        element(:PstCd, nil, address_map.post_code)
+      end,
+      element(:TwnNm, nil, address_map.town_name),
+      if address_map.town_location_name != nil do
+        element(:TwnLctnNm, nil, address_map.town_location_name)
+      end,
+      if address_map.district_name != nil do
+        element(:DstrctNm, nil, address_map.district_name)
+      end,
+      if address_map.country_sub_division != nil do
+        element(:CtrySubDvsn, nil, address_map.country_sub_division)
+      end,
+      element(:Ctry, nil, address_map.country),
+      if address_map.address_lines != nil do
+        Enum.map(address_map.address_lines, &element(:AdrLine, nil, &1))
+      end
+    ])
   end
 end
