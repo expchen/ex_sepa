@@ -230,7 +230,7 @@ defmodule ExSepa.DirectDebit do
   end
 
   defp do_find_payment_information(list, pmtInfId, txinf, acc \\ [])
-  defp do_find_payment_information([], _pmtInfId, _txinf, acc), do: acc
+  defp do_find_payment_information([], _pmtInfId, _txinf, acc), do: Enum.reverse(acc)
 
   defp do_find_payment_information(
          [%ExSepa.DirectDebit.PaymentInformation{} = first | rest],

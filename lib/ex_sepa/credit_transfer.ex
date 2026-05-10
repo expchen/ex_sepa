@@ -218,7 +218,7 @@ defmodule ExSepa.CreditTransfer do
   end
 
   defp do_find_payment_information(list, pmt_inf_id, txinf, acc \\ [])
-  defp do_find_payment_information([], _pmt_inf_id, _txinf, acc), do: acc
+  defp do_find_payment_information([], _pmt_inf_id, _txinf, acc), do: Enum.reverse(acc)
 
   defp do_find_payment_information([first | rest], pmt_inf_id, txinf, acc) do
     updated_payment_information =
