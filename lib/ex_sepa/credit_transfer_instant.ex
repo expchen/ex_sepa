@@ -94,15 +94,7 @@ defmodule ExSepa.CreditTransferInstant do
   """
   @spec new(%{msg_id: String.t(), initiating_party_name: String.t()}) ::
           ExSepa.CreditTransferInstant.t()
-  def new(group_header) do
-    case ExSepa.GroupHeader.new(group_header) do
-      {:ok, parsed_group_header} ->
-        %__MODULE__{group_header: parsed_group_header}
-
-      {:error, e} ->
-        raise ExSepa.GroupHeaderError, message: e
-    end
-  end
+  def new(group_header), do: ExSepa.PaymentInitiation.new(__MODULE__, group_header)
 
   @doc """
   Add Payment Information: set of characteristics that apply to the debit side of the instant credit transfer transactions.
@@ -129,32 +121,12 @@ defmodule ExSepa.CreditTransferInstant do
         payment_information
       )
       when is_map(payment_information) do
-    case ExSepa.CreditTransferInstant.PaymentInformation.new(payment_information) do
-      {:ok, ok_payment_information} ->
-        case initiation.payment_information do
-          nil ->
-            %__MODULE__{initiation | payment_information: [ok_payment_information]}
-
-          payment_information_list ->
-            case Enum.filter(
-                   payment_information_list,
-                   &(&1.payment_id == ok_payment_information.payment_id)
-                 ) do
-              [] ->
-                %__MODULE__{
-                  initiation
-                  | payment_information: [ok_payment_information | payment_information_list]
-                }
-
-              _ ->
-                raise ExSepa.CreditTransferInstant.PaymentInformationError,
-                  message: "payment_id: #{ok_payment_information.payment_id} already exists"
-            end
-        end
-
-      {:error, e} ->
-        raise ExSepa.CreditTransferInstant.PaymentInformationError, message: e
-    end
+    ExSepa.PaymentInitiation.add_payment_information(
+      initiation,
+      payment_information,
+      ExSepa.CreditTransferInstant.PaymentInformation,
+      ExSepa.CreditTransferInstant.PaymentInformationError
+    )
   end
 
   @doc """
@@ -187,56 +159,13 @@ defmodule ExSepa.CreditTransferInstant do
         transaction_information
       )
       when is_binary(payment_id) and is_map(transaction_information) do
-    case initiation.payment_information do
-      nil ->
-        raise ExSepa.CreditTransferInstant.TransactionInformationError,
-          message:
-            "There is no payment information yet. Please create one using the add_payment_information command."
-
-      payment_information_list ->
-        case Enum.filter(payment_information_list, &(&1.payment_id == payment_id)) do
-          [] ->
-            raise ExSepa.CreditTransferInstant.TransactionInformationError,
-              message: "payment_id: #{payment_id} does not exists in payment information"
-
-          _ ->
-            case ExSepa.CreditTransferInstant.TransactionInformation.new(transaction_information) do
-              {:ok, ok_transaction_information} ->
-                %__MODULE__{
-                  initiation
-                  | payment_information:
-                      do_find_payment_information(
-                        payment_information_list,
-                        payment_id,
-                        ok_transaction_information
-                      )
-                }
-
-              {:error, e} ->
-                raise ExSepa.CreditTransferInstant.TransactionInformationError, message: e
-            end
-        end
-    end
-  end
-
-  defp do_find_payment_information(list, pmt_inf_id, txinf, acc \\ [])
-  defp do_find_payment_information([], _pmt_inf_id, _txinf, acc), do: Enum.reverse(acc)
-
-  defp do_find_payment_information([first | rest], pmt_inf_id, txinf, acc) do
-    updated_payment_information =
-      if first.payment_id == pmt_inf_id do
-        struct(first,
-          transaction_information:
-            if(first.transaction_information == nil,
-              do: [txinf],
-              else: [txinf | first.transaction_information]
-            )
-        )
-      else
-        first
-      end
-
-    do_find_payment_information(rest, pmt_inf_id, txinf, [updated_payment_information | acc])
+    ExSepa.PaymentInitiation.add_transaction_information(
+      initiation,
+      payment_id,
+      transaction_information,
+      ExSepa.CreditTransferInstant.TransactionInformation,
+      ExSepa.CreditTransferInstant.TransactionInformationError
+    )
   end
 
   @spec to_xml(ExSepa.CreditTransferInstant.t()) :: String.t()
@@ -246,6 +175,6 @@ defmodule ExSepa.CreditTransferInstant do
   def to_xml(%ExSepa.CreditTransferInstant{} = initiation) do
     initiation
     |> ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09.to_xml(:sct_inst)
-    |> ExSepa.CreditTransfer.validate_xml()
+    |> ExSepa.CreditTransfer.validate_xml(:sct_inst)
   end
 end

@@ -1,5 +1,6 @@
 defmodule ExSepa.CreditTransfer.PaymentInformation do
-  alias ExSepa.Validation
+  alias ExSepa.CreditTransfer.Scheme
+  alias ExSepa.FieldValidation
 
   @instruction_priorities %{High: "HIGH", Normal: "NORM"}
 
@@ -67,58 +68,37 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
           debtor_iban: debtor_iban
         } = payment_information
       )
-      # SCT
-      # SCT Inst
       when scheme in [:sct, :sct_inst] and
-             is_binary(payment_id) and is_binary(debtor_name) and is_binary(debtor_iban) and
-             ((scheme == :sct and is_struct(requested_execution_date, Date)) or
-                (scheme == :sct_inst and
-                   (is_struct(requested_execution_date, Date) or
-                      is_struct(requested_execution_date, DateTime)))) do
-    with :ok <- validate_requested_execution_date(scheme, requested_execution_date),
-         {:ok, new_payment_id} <- Validation.max_text(:payment_id, payment_id, 35),
-         {:ok, new_debtor_name} <- Validation.max_text(:debtor_name, debtor_name, 70),
-         :ok <- Validation.iban(debtor_iban),
-         {:ok, optional_data} <- get_optional_data(scheme, payment_information),
-         :ok <-
-           Validation.address_mandatory(
-             String.slice(debtor_iban, 0, 2),
-             optional_data.debtor_bic,
-             optional_data.debtor_address
-           ) do
-      attributes =
-        %{
-          payment_id: new_payment_id,
-          requested_execution_date: requested_execution_date,
-          debtor_name: new_debtor_name,
-          debtor_iban: debtor_iban,
-          debtor_bic: optional_data.debtor_bic,
-          debtor_address: optional_data.debtor_address,
-          transaction_information: optional_data.transaction_information
-        }
-        |> maybe_put_instruction_priority(scheme, optional_data)
+             is_binary(payment_id) and is_binary(debtor_name) and is_binary(debtor_iban) do
+    if valid_requested_execution_date_type?(scheme, requested_execution_date) do
+      with :ok <- validate_requested_execution_date(scheme, requested_execution_date),
+           {:ok, new_payment_id} <- FieldValidation.max_text(:payment_id, payment_id, 35),
+           {:ok, new_debtor_name} <- FieldValidation.max_text(:debtor_name, debtor_name, 70),
+           :ok <- FieldValidation.iban(debtor_iban),
+           {:ok, optional_data} <- get_optional_data(scheme, payment_information),
+           :ok <-
+             FieldValidation.address_mandatory(
+               String.slice(debtor_iban, 0, 2),
+               optional_data.debtor_bic,
+               optional_data.debtor_address
+             ) do
+        attributes =
+          %{
+            payment_id: new_payment_id,
+            requested_execution_date: requested_execution_date,
+            debtor_name: new_debtor_name,
+            debtor_iban: debtor_iban,
+            debtor_bic: optional_data.debtor_bic,
+            debtor_address: optional_data.debtor_address,
+            transaction_information: optional_data.transaction_information
+          }
+          |> maybe_put_instruction_priority(scheme, optional_data)
 
-      {:ok, struct(module, attributes)}
+        {:ok, struct(module, attributes)}
+      end
+    else
+      {:error, requested_execution_date_type_error(scheme)}
     end
-  end
-
-  def build(
-        scheme,
-        _module,
-        _enforce_keys,
-        %{
-          payment_id: payment_id,
-          requested_execution_date: _requested_execution_date,
-          debtor_name: debtor_name,
-          debtor_iban: debtor_iban
-        }
-      )
-      when is_binary(payment_id) and is_binary(debtor_name) and is_binary(debtor_iban) do
-    {:error,
-     if(scheme == :sct,
-       do: "Parameter requested_execution_date must be a date",
-       else: "Parameter requested_execution_date must be a date or datetime"
-     )}
   end
 
   def build(_scheme, _module, enforce_keys, payment_information) do
@@ -126,7 +106,7 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
 
     if missing_keys == [] do
       with :ok <-
-             Validation.text(
+             FieldValidation.text(
                [
                  {:payment_id, payment_information[:payment_id]},
                  {:debtor_name, payment_information[:debtor_name]},
@@ -177,7 +157,7 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
          {:ok, debtor_address} <-
            ExSepa.Address.get_address(payment_information, :debtor_address),
          {:ok, instruction_priority} <- get_instruction_priority(scheme, payment_information),
-         :ok <- Validation.bic(debtor_bic) do
+         :ok <- FieldValidation.bic(debtor_bic) do
       {:ok,
        %{
          instruction_priority: instruction_priority,
@@ -188,10 +168,12 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
     end
   end
 
-  defp maybe_put_instruction_priority(attributes, :sct, _optional_data), do: attributes
-
-  defp maybe_put_instruction_priority(attributes, :sct_inst, optional_data) do
-    Map.put(attributes, :instruction_priority, optional_data.instruction_priority)
+  defp maybe_put_instruction_priority(attributes, scheme, optional_data) do
+    if Scheme.instruction_priority_allowed?(scheme) do
+      Map.put(attributes, :instruction_priority, optional_data.instruction_priority)
+    else
+      attributes
+    end
   end
 
   defp get_debtor_bic(payment_information) do
@@ -200,7 +182,7 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
         {:ok, debtor_bic}
 
       {:ok, debtor_bic} ->
-        Validation.text([{:debtor_bic, debtor_bic}], "Parameters must be strings.")
+        FieldValidation.text([{:debtor_bic, debtor_bic}], "Parameters must be strings.")
 
       :error ->
         {:ok, ""}
@@ -217,30 +199,49 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
     end
   end
 
-  defp get_instruction_priority(:sct, _payment_information), do: {:ok, ""}
+  defp get_instruction_priority(scheme, payment_information) do
+    if Scheme.instruction_priority_allowed?(scheme) do
+      case Map.fetch(payment_information, :instruction_priority) do
+        {:ok, instruction_priority} when is_atom(instruction_priority) ->
+          case Map.fetch(@instruction_priorities, instruction_priority) do
+            {:ok, value} ->
+              {:ok, value}
 
-  defp get_instruction_priority(:sct_inst, payment_information) do
-    case Map.fetch(payment_information, :instruction_priority) do
-      {:ok, instruction_priority} when is_atom(instruction_priority) ->
-        case Map.fetch(@instruction_priorities, instruction_priority) do
-          {:ok, value} ->
-            {:ok, value}
+            :error ->
+              {:error,
+               "instruction_priority: must be one of [:High, :Normal, \"HIGH\", \"NORM\"]"}
+          end
 
-          :error ->
-            {:error, "instruction_priority: must be one of [:High, :Normal, \"HIGH\", \"NORM\"]"}
-        end
+        {:ok, "HIGH"} ->
+          {:ok, "HIGH"}
 
-      {:ok, "HIGH"} ->
-        {:ok, "HIGH"}
+        {:ok, "NORM"} ->
+          {:ok, "NORM"}
 
-      {:ok, "NORM"} ->
-        {:ok, "NORM"}
+        {:ok, _instruction_priority} ->
+          {:error, "instruction_priority: must be one of [:High, :Normal, \"HIGH\", \"NORM\"]"}
 
-      {:ok, _instruction_priority} ->
-        {:error, "instruction_priority: must be one of [:High, :Normal, \"HIGH\", \"NORM\"]"}
+        :error ->
+          {:ok, ""}
+      end
+    else
+      {:ok, ""}
+    end
+  end
 
-      :error ->
-        {:ok, ""}
+  defp valid_requested_execution_date_type?(_scheme, %Date{}), do: true
+
+  defp valid_requested_execution_date_type?(scheme, %DateTime{}) do
+    Scheme.allows_datetime_requested_execution_date?(scheme)
+  end
+
+  defp valid_requested_execution_date_type?(_scheme, _requested_execution_date), do: false
+
+  defp requested_execution_date_type_error(scheme) do
+    if Scheme.allows_datetime_requested_execution_date?(scheme) do
+      "Parameter requested_execution_date must be a date or datetime"
+    else
+      "Parameter requested_execution_date must be a date"
     end
   end
 end

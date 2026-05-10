@@ -1,5 +1,5 @@
 defmodule ExSepa.GroupHeader do
-  alias ExSepa.Validation
+  alias ExSepa.FieldValidation
 
   @moduledoc false
   # """
@@ -26,9 +26,9 @@ defmodule ExSepa.GroupHeader do
         }) :: {:error, String.t()} | {:ok, __MODULE__.t()}
   def new(%{msg_id: msg_id, initiating_party_name: initiating_party_name})
       when is_binary(msg_id) and is_binary(initiating_party_name) do
-    with {:ok, new_msg_id} <- Validation.max_text(:msg_id, msg_id, 35),
+    with {:ok, new_msg_id} <- FieldValidation.max_text(:msg_id, msg_id, 35),
          {:ok, new_initiating_party_name} <-
-           Validation.max_text(:initiating_party_name, initiating_party_name, 70) do
+           FieldValidation.max_text(:initiating_party_name, initiating_party_name, 70) do
       {:ok, %__MODULE__{msg_id: new_msg_id, initiating_party_name: new_initiating_party_name}}
     end
   end
@@ -38,7 +38,7 @@ defmodule ExSepa.GroupHeader do
 
     if missing_keys == [] do
       with :ok <-
-             Validation.text(
+             FieldValidation.text(
                [
                  {:msg_id, group_header_map[:msg_id]},
                  {:initiating_party_name, group_header_map[:initiating_party_name]}

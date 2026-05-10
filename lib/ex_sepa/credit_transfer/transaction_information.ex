@@ -1,5 +1,5 @@
 defmodule ExSepa.CreditTransfer.TransactionInformation do
-  alias ExSepa.Validation
+  alias ExSepa.FieldValidation
 
   @moduledoc false
   # """
@@ -63,13 +63,15 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
       }
       when is_binary(end_to_end_id) and is_float(amount) and is_binary(creditor_name) and
              is_binary(creditor_iban) ->
-        with {:ok, new_end_to_end_id} <- Validation.max_text(:end_to_end_id, end_to_end_id, 35),
-             :ok <- Validation.amount(amount),
-             {:ok, new_creditor_name} <- Validation.max_text(:creditor_name, creditor_name, 70),
-             :ok <- Validation.iban(creditor_iban),
+        with {:ok, new_end_to_end_id} <-
+               FieldValidation.max_text(:end_to_end_id, end_to_end_id, 35),
+             :ok <- FieldValidation.amount(amount),
+             {:ok, new_creditor_name} <-
+               FieldValidation.max_text(:creditor_name, creditor_name, 70),
+             :ok <- FieldValidation.iban(creditor_iban),
              {:ok, optional_data} <- get_optional_data(transaction_information),
              :ok <-
-               Validation.address_mandatory(
+               FieldValidation.address_mandatory(
                  String.slice(creditor_iban, 0, 2),
                  optional_data.creditor_bic,
                  optional_data.creditor_address
@@ -101,7 +103,7 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
 
         if missing_keys == [] do
           with :ok <-
-                 Validation.text(
+                 FieldValidation.text(
                    [
                      {:end_to_end_id, transaction_information[:end_to_end_id]},
                      {:creditor_name, transaction_information[:creditor_name]},
@@ -122,9 +124,9 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
          {:ok, remittance_information} <- get_remittance_information(transaction_information),
          {:ok, creditor_address} <-
            ExSepa.Address.get_address(transaction_information, :creditor_address),
-         :ok <- Validation.bic(creditor_bic),
+         :ok <- FieldValidation.bic(creditor_bic),
          {:ok, new_remittance_information} <-
-           Validation.optional_max_text(:remittance_information, remittance_information, 140) do
+           FieldValidation.optional_max_text(:remittance_information, remittance_information, 140) do
       {:ok,
        %{
          creditor_bic: creditor_bic,
@@ -140,7 +142,7 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
         {:ok, creditor_bic}
 
       {:ok, creditor_bic} ->
-        Validation.text([{:creditor_bic, creditor_bic}], "Parameters must be strings.")
+        FieldValidation.text([{:creditor_bic, creditor_bic}], "Parameters must be strings.")
 
       :error ->
         {:ok, ""}
@@ -153,7 +155,7 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
         {:ok, remittance_information}
 
       {:ok, remittance_information} ->
-        Validation.text(
+        FieldValidation.text(
           [{:remittance_information, remittance_information}],
           "Parameters must be strings."
         )

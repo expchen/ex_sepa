@@ -1,4 +1,6 @@
 defmodule ExSepa.CreditTransfer do
+  alias ExSepa.CreditTransfer.Scheme
+
   @moduledoc """
   This module is based on the structure of the SEPA Credit Transfer Scheme.
   The Credit Transfer initiation message is sent by the initiating party to the debtor's intermediary or agent.
@@ -93,15 +95,7 @@ defmodule ExSepa.CreditTransfer do
   """
   @spec new(%{msg_id: String.t(), initiating_party_name: String.t()}) ::
           ExSepa.CreditTransfer.t()
-  def new(group_header) do
-    case ExSepa.GroupHeader.new(group_header) do
-      {:ok, parsed_group_header} ->
-        %__MODULE__{group_header: parsed_group_header}
-
-      {:error, e} ->
-        raise ExSepa.GroupHeaderError, message: e
-    end
-  end
+  def new(group_header), do: ExSepa.PaymentInitiation.new(__MODULE__, group_header)
 
   @doc """
   Add Payment Information: set of characteristics that apply to the debit side of the credit transfer transactions.
@@ -127,32 +121,12 @@ defmodule ExSepa.CreditTransfer do
         payment_information
       )
       when is_map(payment_information) do
-    case ExSepa.CreditTransfer.PaymentInformation.new(payment_information) do
-      {:ok, ok_payment_information} ->
-        case initiation.payment_information do
-          nil ->
-            %__MODULE__{initiation | payment_information: [ok_payment_information]}
-
-          payment_information_list ->
-            case Enum.filter(
-                   payment_information_list,
-                   &(&1.payment_id == ok_payment_information.payment_id)
-                 ) do
-              [] ->
-                %__MODULE__{
-                  initiation
-                  | payment_information: [ok_payment_information | payment_information_list]
-                }
-
-              _ ->
-                raise ExSepa.CreditTransfer.PaymentInformationError,
-                  message: "payment_id: #{ok_payment_information.payment_id} already exists"
-            end
-        end
-
-      {:error, e} ->
-        raise ExSepa.CreditTransfer.PaymentInformationError, message: e
-    end
+    ExSepa.PaymentInitiation.add_payment_information(
+      initiation,
+      payment_information,
+      ExSepa.CreditTransfer.PaymentInformation,
+      ExSepa.CreditTransfer.PaymentInformationError
+    )
   end
 
   @doc """
@@ -185,56 +159,13 @@ defmodule ExSepa.CreditTransfer do
         transaction_information
       )
       when is_binary(payment_id) and is_map(transaction_information) do
-    case initiation.payment_information do
-      nil ->
-        raise ExSepa.CreditTransfer.TransactionInformationError,
-          message:
-            "There is no payment information yet. Please create one using the add_payment_information command."
-
-      payment_information_list ->
-        case Enum.filter(payment_information_list, &(&1.payment_id == payment_id)) do
-          [] ->
-            raise ExSepa.CreditTransfer.TransactionInformationError,
-              message: "payment_id: #{payment_id} does not exists in payment information"
-
-          _ ->
-            case ExSepa.CreditTransfer.TransactionInformation.new(transaction_information) do
-              {:ok, ok_transaction_information} ->
-                %__MODULE__{
-                  initiation
-                  | payment_information:
-                      do_find_payment_information(
-                        payment_information_list,
-                        payment_id,
-                        ok_transaction_information
-                      )
-                }
-
-              {:error, e} ->
-                raise ExSepa.CreditTransfer.TransactionInformationError, message: e
-            end
-        end
-    end
-  end
-
-  defp do_find_payment_information(list, pmt_inf_id, txinf, acc \\ [])
-  defp do_find_payment_information([], _pmt_inf_id, _txinf, acc), do: Enum.reverse(acc)
-
-  defp do_find_payment_information([first | rest], pmt_inf_id, txinf, acc) do
-    updated_payment_information =
-      if first.payment_id == pmt_inf_id do
-        struct(first,
-          transaction_information:
-            if(first.transaction_information == nil,
-              do: [txinf],
-              else: [txinf | first.transaction_information]
-            )
-        )
-      else
-        first
-      end
-
-    do_find_payment_information(rest, pmt_inf_id, txinf, [updated_payment_information | acc])
+    ExSepa.PaymentInitiation.add_transaction_information(
+      initiation,
+      payment_id,
+      transaction_information,
+      ExSepa.CreditTransfer.TransactionInformation,
+      ExSepa.CreditTransfer.TransactionInformationError
+    )
   end
 
   @spec to_xml(ExSepa.CreditTransfer.t()) :: String.t()
@@ -244,21 +175,16 @@ defmodule ExSepa.CreditTransfer do
   def to_xml(%ExSepa.CreditTransfer{} = initiation) do
     initiation
     |> ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09.to_xml(:sct)
-    |> validate_xml()
+    |> validate_xml(:sct)
   end
 
   @doc false
   @spec validate_xml(String.t()) :: String.t()
-  def validate_xml(xml) do
-    {:ok, xsddoc} = File.read(Path.expand("priv/xsd/pain.001.001.09_GBIC_5.xsd"))
-    {:ok, model} = :erlsom.compile_xsd(xsddoc)
+  def validate_xml(xml), do: validate_xml(xml, :sct)
 
-    case :erlsom.scan(xml, model) do
-      {:ok, _out, _rest} ->
-        xml
-
-      {:error, [{:exception, {:error, message}}, _stack, _received]} ->
-        raise ExSepa.XmlError, message: to_string(message)
-    end
+  @doc false
+  @spec validate_xml(String.t(), Scheme.t()) :: String.t()
+  def validate_xml(xml, scheme) do
+    ExSepa.XmlValidation.validate(xml, Scheme.validation_xsd(scheme))
   end
 end

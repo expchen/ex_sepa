@@ -1,5 +1,5 @@
 defmodule ExSepa.DirectDebit.PaymentInformation do
-  alias ExSepa.Validation
+  alias ExSepa.FieldValidation
 
   @moduledoc false
   # """
@@ -70,11 +70,11 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
       )
       when is_binary(payment_id) and is_binary(creditor_id) and
              is_binary(creditor_name) and is_binary(creditor_iban) do
-    with {:ok, new_payment_id} <- Validation.max_text(:payment_id, payment_id, 35),
-         :ok <- Validation.due_date(due_date),
-         {:ok, new_creditor_id} <- Validation.max_text(:creditor_id, creditor_id, 35),
-         {:ok, new_creditor_name} <- Validation.max_text(:creditor_name, creditor_name, 70),
-         :ok <- Validation.iban(creditor_iban),
+    with {:ok, new_payment_id} <- FieldValidation.max_text(:payment_id, payment_id, 35),
+         :ok <- FieldValidation.due_date(due_date),
+         {:ok, new_creditor_id} <- FieldValidation.max_text(:creditor_id, creditor_id, 35),
+         {:ok, new_creditor_name} <- FieldValidation.max_text(:creditor_name, creditor_name, 70),
+         :ok <- FieldValidation.iban(creditor_iban),
          {:ok, optional_data} <- get_optional_data(payment_information) do
       {:ok,
        %__MODULE__{
@@ -110,7 +110,7 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
 
     if missing_keys == [] do
       with :ok <-
-             Validation.text(
+             FieldValidation.text(
                [
                  {:payment_id, payment_information[:payment_id]},
                  {:creditor_id, payment_information[:creditor_id]},
@@ -132,7 +132,7 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
          {:ok, transaction_information} <- get_transaction_information(payment_information),
          {:ok, creditor_address} <-
            ExSepa.Address.get_address(payment_information, :creditor_address),
-         :ok <- Validation.bic(creditor_bic) do
+         :ok <- FieldValidation.bic(creditor_bic) do
       {:ok,
        %{
          creditor_bic: creditor_bic,
@@ -149,7 +149,7 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
         {:ok, creditor_bic}
 
       {:ok, creditor_bic} ->
-        Validation.text([{:creditor_bic, creditor_bic}], "Parameters must be strings.")
+        FieldValidation.text([{:creditor_bic, creditor_bic}], "Parameters must be strings.")
 
       :error ->
         {:ok, ""}

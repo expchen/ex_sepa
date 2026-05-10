@@ -100,15 +100,7 @@ defmodule ExSepa.DirectDebit do
     * `:initiating_party_name` - Party that initiates the payment. Name by which a party is known and which is usually used to identify that party. Usage: This can either be the creditor or a party that initiates the direct debit on behalf of the creditor.
   """
   @spec new(%{msg_id: String.t(), initiating_party_name: String.t()}) :: ExSepa.DirectDebit.t()
-  def new(group_header) do
-    case ExSepa.GroupHeader.new(group_header) do
-      {:ok, group_header} ->
-        %__MODULE__{group_header: group_header}
-
-      {:error, e} ->
-        raise ExSepa.GroupHeaderError, message: e
-    end
-  end
+  def new(group_header), do: ExSepa.PaymentInitiation.new(__MODULE__, group_header)
 
   @doc """
   Add Payment Information: Set of characteristics that apply to the credit side of the payment transactions included in the direct debit transaction initiation.
@@ -137,32 +129,12 @@ defmodule ExSepa.DirectDebit do
         payment_information
       )
       when is_map(payment_information) do
-    case ExSepa.DirectDebit.PaymentInformation.new(payment_information) do
-      {:ok, ok_payment_information} ->
-        if initiation.payment_information == nil do
-          %__MODULE__{initiation | payment_information: [ok_payment_information]}
-        else
-          case Enum.filter(
-                 initiation.payment_information,
-                 &(&1.payment_id == ok_payment_information.payment_id)
-               ) do
-            [] ->
-              %__MODULE__{
-                initiation
-                | payment_information: [
-                    ok_payment_information | initiation.payment_information
-                  ]
-              }
-
-            _ ->
-              raise ExSepa.DirectDebit.PaymentInformationError,
-                message: "payment_id: #{ok_payment_information.payment_id} already exists"
-          end
-        end
-
-      {:error, e} ->
-        raise ExSepa.DirectDebit.PaymentInformationError, message: e
-    end
+    ExSepa.PaymentInitiation.add_payment_information(
+      initiation,
+      payment_information,
+      ExSepa.DirectDebit.PaymentInformation,
+      ExSepa.DirectDebit.PaymentInformationError
+    )
   end
 
   @doc """
@@ -199,60 +171,13 @@ defmodule ExSepa.DirectDebit do
         transaction_information
       )
       when is_binary(payment_id) and is_map(transaction_information) do
-    if initiation.payment_information == nil do
-      raise ExSepa.DirectDebit.TransactionInformationError,
-        message:
-          "There is no payment information yet. Please create one using the add_payment_information command."
-    else
-      case Enum.filter(initiation.payment_information, &(&1.payment_id == payment_id)) do
-        [] ->
-          raise ExSepa.DirectDebit.TransactionInformationError,
-            message: "payment_id: #{payment_id} does not exists in payment information"
-
-        _ ->
-          case ExSepa.DirectDebit.TransactionInformation.new(transaction_information) do
-            {:ok, ok_transaction_information} ->
-              %__MODULE__{
-                initiation
-                | payment_information:
-                    do_find_payment_information(
-                      initiation.payment_information,
-                      payment_id,
-                      ok_transaction_information
-                    )
-              }
-
-            {:error, e} ->
-              raise ExSepa.DirectDebit.TransactionInformationError, message: e
-          end
-      end
-    end
-  end
-
-  defp do_find_payment_information(list, pmtInfId, txinf, acc \\ [])
-  defp do_find_payment_information([], _pmtInfId, _txinf, acc), do: Enum.reverse(acc)
-
-  defp do_find_payment_information(
-         [%ExSepa.DirectDebit.PaymentInformation{} = first | rest],
-         pmtInfId,
-         txinf,
-         acc
-       ) do
-    do_find_payment_information(rest, pmtInfId, txinf, [
-      if first.payment_id == pmtInfId do
-        %ExSepa.DirectDebit.PaymentInformation{
-          first
-          | transaction_information:
-              if(first.transaction_information == nil,
-                do: [txinf],
-                else: [txinf | first.transaction_information]
-              )
-        }
-      else
-        first
-      end
-      | acc
-    ])
+    ExSepa.PaymentInitiation.add_transaction_information(
+      initiation,
+      payment_id,
+      transaction_information,
+      ExSepa.DirectDebit.TransactionInformation,
+      ExSepa.DirectDebit.TransactionInformationError
+    )
   end
 
   @spec to_xml(ExSepa.DirectDebit.t()) :: String.t()
@@ -261,19 +186,6 @@ defmodule ExSepa.DirectDebit do
   """
   def to_xml(%ExSepa.DirectDebit{} = initiation) do
     xml = ExSepa.DirectDebit.CustomerDirectDebitInitiationV08.to_xml(initiation)
-    valid_xml(xml)
-  end
-
-  defp valid_xml(xml) do
-    {:ok, xsddoc} = File.read(Path.expand("priv/xsd/pain.008.001.08_GBIC_5.xsd"))
-    {:ok, model} = :erlsom.compile_xsd(xsddoc)
-
-    case :erlsom.scan(xml, model) do
-      {:ok, _out, _rest} ->
-        xml
-
-      {:error, [{:exception, {:error, message}}, _stack, _received]} ->
-        raise ExSepa.XmlError, message: to_string(message)
-    end
+    ExSepa.XmlValidation.validate(xml, "priv/xsd/pain.008.001.08_GBIC_5.xsd")
   end
 end

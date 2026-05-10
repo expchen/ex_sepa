@@ -3,7 +3,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
   # """
   # Direct Debit Transaction Information: Provides information on the individual transaction(s) included in the message.
   # """
-  alias ExSepa.Validation
+  alias ExSepa.FieldValidation
 
   @enforce_keys [
     :end_to_end_id,
@@ -74,15 +74,15 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
       )
       when is_binary(end_to_end_id) and is_float(amount) and is_binary(mandate_id) and
              is_binary(debtor_name) and is_binary(debtor_iban) do
-    with {:ok, new_end_to_end_id} <- Validation.max_text(:end_to_end_id, end_to_end_id, 35),
-         :ok <- Validation.amount(amount),
-         {:ok, new_mandate_id} <- Validation.max_text(:mandate_id, mandate_id, 35),
-         :ok <- Validation.date(mandate_signing_date),
-         {:ok, new_debtor_name} <- Validation.max_text(:debtor_name, debtor_name, 70),
-         :ok <- Validation.iban(debtor_iban),
+    with {:ok, new_end_to_end_id} <- FieldValidation.max_text(:end_to_end_id, end_to_end_id, 35),
+         :ok <- FieldValidation.amount(amount),
+         {:ok, new_mandate_id} <- FieldValidation.max_text(:mandate_id, mandate_id, 35),
+         :ok <- FieldValidation.date(mandate_signing_date),
+         {:ok, new_debtor_name} <- FieldValidation.max_text(:debtor_name, debtor_name, 70),
+         :ok <- FieldValidation.iban(debtor_iban),
          {:ok, optional_data} <- get_optional_data(transaction_information),
          :ok <-
-           Validation.address_mandatory(
+           FieldValidation.address_mandatory(
              String.slice(debtor_iban, 0, 2),
              optional_data.debtor_bic,
              optional_data.debtor_address
@@ -137,7 +137,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
 
     if missing_keys == [] do
       with :ok <-
-             Validation.text(
+             FieldValidation.text(
                [
                  {:end_to_end_id, transaction_information[:end_to_end_id]},
                  {:mandate_id, transaction_information[:mandate_id]},
@@ -158,9 +158,9 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
          {:ok, remittance_information} <- get_remittance_information(transaction_information),
          {:ok, debtor_address} <-
            ExSepa.Address.get_address(transaction_information, :debtor_address),
-         :ok <- Validation.bic(debtor_bic),
+         :ok <- FieldValidation.bic(debtor_bic),
          {:ok, new_remittance_information} <-
-           Validation.optional_max_text(:remittance_information, remittance_information, 140) do
+           FieldValidation.optional_max_text(:remittance_information, remittance_information, 140) do
       {:ok,
        %{
          debtor_bic: debtor_bic,
@@ -176,7 +176,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
         {:ok, debtor_bic}
 
       {:ok, debtor_bic} ->
-        Validation.text([{:debtor_bic, debtor_bic}], "Parameters must be strings.")
+        FieldValidation.text([{:debtor_bic, debtor_bic}], "Parameters must be strings.")
 
       :error ->
         {:ok, ""}
@@ -189,7 +189,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
         {:ok, remittance_information}
 
       {:ok, remittance_information} ->
-        Validation.text(
+        FieldValidation.text(
           [{:remittance_information, remittance_information}],
           "Parameters must be strings."
         )

@@ -1,4 +1,5 @@
 defmodule ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09 do
+  alias ExSepa.CreditTransfer.Scheme
   import XmlBuilder
 
   @moduledoc false
@@ -14,7 +15,10 @@ defmodule ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09 do
   def to_xml(%ExSepa.CreditTransfer{} = credit_transfer), do: to_xml(credit_transfer, :sct)
 
   @doc false
-  @spec to_xml(ExSepa.CreditTransfer.t() | ExSepa.CreditTransferInstant.t(), :sct | :sct_inst) ::
+  @spec to_xml(
+          ExSepa.CreditTransfer.t() | ExSepa.CreditTransferInstant.t(),
+          Scheme.t()
+        ) ::
           String.t()
   def to_xml(credit_transfer, scheme) when scheme in [:sct, :sct_inst] do
     {payment_information_xml, number_of_transactions, control_sum} =
@@ -115,17 +119,20 @@ defmodule ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09 do
   end
 
   defp to_xml_payment_type_information(payment_information, scheme) do
+    local_instrument_code = Scheme.local_instrument_code(scheme)
+
     element(:PmtTpInf, nil, [
-      if scheme == :sct_inst and payment_information.instruction_priority != "" do
+      if Scheme.instruction_priority_allowed?(scheme) and
+           payment_information.instruction_priority != "" do
         # EPC: If present, pre-agreed customer-to-PSP conditions apply.
         element(:InstrPrty, nil, payment_information.instruction_priority)
       end,
       element(:SvcLvl, nil, [
-        element(:Cd, nil, "SEPA")
+        element(:Cd, nil, Scheme.service_level_code(scheme))
       ]),
-      if scheme == :sct_inst do
+      if local_instrument_code != nil do
         element(:LclInstrm, nil, [
-          element(:Cd, nil, "INST")
+          element(:Cd, nil, local_instrument_code)
         ])
       end
     ])

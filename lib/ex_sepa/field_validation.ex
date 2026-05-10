@@ -1,4 +1,4 @@
-defmodule ExSepa.Validation do
+defmodule ExSepa.FieldValidation do
   alias ExSepa.CountryCodes
 
   @moduledoc false
@@ -162,19 +162,19 @@ defmodule ExSepa.Validation do
 
   ## Examples
 
-      iex> ExSepa.Validation.amount(50.0)
+      iex> ExSepa.FieldValidation.amount(50.0)
       :ok
 
-      iex> ExSepa.Validation.amount(0.0)
+      iex> ExSepa.FieldValidation.amount(0.0)
       {:error, "The amount must be more then 0.00"}
 
-      iex> ExSepa.Validation.amount(-53.15)
+      iex> ExSepa.FieldValidation.amount(-53.15)
       {:error, "The amount must be more then 0.00"}
 
-      iex> ExSepa.Validation.amount(4561237531.0)
+      iex> ExSepa.FieldValidation.amount(4561237531.0)
       {:error, "The amount must be less then 999,999,999.99 euro"}
 
-      iex> ExSepa.Validation.amount(30.303)
+      iex> ExSepa.FieldValidation.amount(30.303)
       {:error, "Amount has too many decimal places"}
   """
   @spec amount(float()) :: :ok | {:error, String.t()}
@@ -248,16 +248,16 @@ defmodule ExSepa.Validation do
 
   ## Examples
 
-      iex> ExSepa.Validation.address_mandatory("DE", "", nil)
+      iex> ExSepa.FieldValidation.address_mandatory("DE", "", nil)
       :ok
 
-      iex> ExSepa.Validation.address_mandatory("AD", "", nil)
+      iex> ExSepa.FieldValidation.address_mandatory("AD", "", nil)
       {:error, "BIC is mandatory for non-EEA SEPA country or territory"}
 
-      iex> ExSepa.Validation.address_mandatory("AD", "CASBADADXXX", nil)
+      iex> ExSepa.FieldValidation.address_mandatory("AD", "CASBADADXXX", nil)
       {:error, "Address is mandatory for non-EEA SEPA country or territory"}
 
-      iex> ExSepa.Validation.address_mandatory("AD", "CASBADADXXX", %ExSepa.Address{town_name: "Andorra la Vella", country: "AD"})
+      iex> ExSepa.FieldValidation.address_mandatory("AD", "CASBADADXXX", %ExSepa.Address{town_name: "Andorra la Vella", country: "AD"})
       :ok
   """
   @spec address_mandatory(String.t(), String.t(), ExSepa.Address.t() | nil) ::

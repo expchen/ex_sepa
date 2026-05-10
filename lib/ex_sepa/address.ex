@@ -1,6 +1,6 @@
 defmodule ExSepa.Address do
   import XmlBuilder
-  alias ExSepa.Validation
+  alias ExSepa.FieldValidation
 
   @moduledoc """
   Postal Address: Structured and hybrid addresses are supported.
@@ -93,8 +93,8 @@ defmodule ExSepa.Address do
           {:error, String.t()} | {:ok, __MODULE__.t()}
   def new(%{town_name: town_name, country: country} = payment_information)
       when is_binary(town_name) and is_binary(country) do
-    with {:ok, new_town_name} <- Validation.max_text(:town_name, town_name, 35),
-         :ok <- Validation.country_code(country),
+    with {:ok, new_town_name} <- FieldValidation.max_text(:town_name, town_name, 35),
+         :ok <- FieldValidation.country_code(country),
          {:ok, optional_data} <- get_optional_data(payment_information) do
       {:ok,
        %__MODULE__{
@@ -121,7 +121,7 @@ defmodule ExSepa.Address do
     missing_keys = @enforce_keys -- Map.keys(address_map)
 
     if missing_keys == [] do
-      Validation.text(
+      FieldValidation.text(
         [
           {:town_name, address_map[:town_name]},
           {:country, address_map[:country]}
@@ -171,10 +171,10 @@ defmodule ExSepa.Address do
   defp get_text(payment_information, field, length) do
     case Map.fetch(payment_information, field) do
       {:ok, value} when is_binary(value) ->
-        Validation.max_text(field, value, length)
+        FieldValidation.max_text(field, value, length)
 
       {:ok, value} ->
-        Validation.text([{field, value}], "Parameters must be strings.")
+        FieldValidation.text([{field, value}], "Parameters must be strings.")
 
       :error ->
         {:ok, nil}
@@ -209,11 +209,11 @@ defmodule ExSepa.Address do
   end
 
   defp validate_address_line(line, _index) when is_binary(line) do
-    Validation.max_text(:address_lines, line, 70)
+    FieldValidation.max_text(:address_lines, line, 70)
   end
 
   defp validate_address_line(line, index) do
-    Validation.text(
+    FieldValidation.text(
       [{:"address_lines[#{index}]", line}],
       "Parameters must be strings."
     )
