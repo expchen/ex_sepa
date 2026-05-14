@@ -61,6 +61,12 @@ defmodule ExSepa.FieldValidation do
     end
   end
 
+  @doc """
+  Verifies that the provided values are UTF-8 encoded binaries.
+
+  This helper is mainly used to produce consistent validation errors for one or
+  more fields.
+  """
   @spec text(keyword(binary())) :: :ok | {:error, String.t()}
   def text(text_tuple_list, pre_error_text \\ "") do
     case do_text(text_tuple_list, pre_error_text) do
@@ -129,31 +135,64 @@ defmodule ExSepa.FieldValidation do
   @spec max_text(atom(), String.t(), non_neg_integer()) ::
           {:ok, String.t()} | {:error, String.t()}
   def max_text(element, text, length) do
-    with :ok <- real_text(text),
-         new_text = text |> String.trim(),
-         :ok <- min_max_text(new_text, 1, length),
-         {:ok, language_text} <-
-           in_language(
-             new_text,
-             ~r/[a-zA-Z0-9|\x2F|\x2D|\x3F|\x3A|\x28|\x29|\x2E|\x20|\x2C|\x27|\x2B]{1,#{length}}/
-           ),
-         :ok <- character_set_start(language_text),
-         :ok <- character_set_end(language_text),
-         :ok <- character_set_contain(language_text) do
-      {:ok, language_text}
-    else
-      {:error, e} ->
-        {:error, "#{element}: #{e}"}
-    end
+    validate_text(element, text, length)
   end
 
+  @doc """
+  Validates optional text using the default EPC strict rules.
+
+  Blank strings are accepted and returned as `{:ok, ""}`.
+  """
   @spec optional_max_text(atom(), String.t(), non_neg_integer()) ::
           {:ok, String.t()} | {:error, String.t()}
   def optional_max_text(element, text, length) do
-    if text |> String.trim() == "" do
-      {:ok, ""}
+    validate_optional_text(element, text, length)
+  end
+
+  @spec validate_text(atom(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp validate_text(element, text, length) do
+    with :ok <- real_text(text),
+         trimmed_text = String.trim(text),
+         :ok <- min_max_text(trimmed_text, 1, length),
+         {:ok, validated_text} <- do_validate_text(trimmed_text, length) do
+      {:ok, validated_text}
     else
-      max_text(element, text, length)
+      {:error, error} -> {:error, "#{element}: #{error}"}
+    end
+  end
+
+  @spec validate_optional_text(
+          atom(),
+          String.t(),
+          non_neg_integer()
+        ) :: {:ok, String.t()} | {:error, String.t()}
+  defp validate_optional_text(element, text, length) do
+    with :ok <- real_text(text) do
+      if String.trim(text) == "" do
+        {:ok, ""}
+      else
+        validate_text(element, text, length)
+      end
+    end
+  end
+
+  defp do_validate_text(text, length) do
+    with {:ok, language_text} <-
+           in_language(
+             text,
+             ~r/[a-zA-Z0-9|\x2F|\x2D|\x3F|\x3A|\x28|\x29|\x2E|\x20|\x2C|\x27|\x2B]{1,#{length}}/
+           ),
+         :ok <- validate_slash_rules(language_text) do
+      {:ok, language_text}
+    end
+  end
+
+  defp validate_slash_rules(text) do
+    with :ok <- character_set_start(text),
+         :ok <- character_set_end(text),
+         :ok <- character_set_contain(text) do
+      :ok
     end
   end
 
@@ -196,6 +235,9 @@ defmodule ExSepa.FieldValidation do
     end
   end
 
+  @doc """
+  Validates that the due date lies in the future.
+  """
   @spec due_date(Date.t()) :: :ok | {:error, String.t()}
   def due_date(%Date{} = date) do
     case Date.compare(Date.utc_today(), date) do
@@ -204,6 +246,9 @@ defmodule ExSepa.FieldValidation do
     end
   end
 
+  @doc """
+  Validates that the date lies in the past.
+  """
   @spec date(Date.t()) :: :ok | {:error, String.t()}
   def date(%Date{} = date) do
     case Date.compare(date, Date.utc_today()) do
@@ -212,6 +257,9 @@ defmodule ExSepa.FieldValidation do
     end
   end
 
+  @doc """
+  Validates an IBAN.
+  """
   @spec iban(String.t()) :: :ok | {:error, String.t()}
   def iban(iban) do
     case Bankster.iban_validate(iban) do
@@ -220,6 +268,12 @@ defmodule ExSepa.FieldValidation do
     end
   end
 
+  @doc """
+  Validates a BIC.
+
+  An empty string is accepted, because some validation paths only require a BIC
+  in specific SEPA scenarios.
+  """
   @spec bic(String.t()) :: :ok | {:error, String.t()}
   def bic(bic) do
     if bic == "" do
@@ -232,6 +286,9 @@ defmodule ExSepa.FieldValidation do
     end
   end
 
+  @doc """
+  Validates a country code using the default EPC strict rules.
+  """
   @spec country_code(String.t()) :: :ok | {:error, String.t()}
   def country_code(country) do
     with :ok <- do_pattern_test(country, ~r/[A-Z]{2,2}/) do
@@ -263,6 +320,15 @@ defmodule ExSepa.FieldValidation do
   @spec address_mandatory(String.t(), String.t(), ExSepa.Address.t() | nil) ::
           :ok | {:error, String.t()}
   def address_mandatory(country, bic, address) do
+    validate_address_requirements(country, bic, address)
+  end
+
+  @spec validate_address_requirements(
+          String.t(),
+          String.t(),
+          ExSepa.Address.t() | nil
+        ) :: :ok | {:error, String.t()}
+  defp validate_address_requirements(country, bic, address) do
     with :ok <- do_pattern_test(country, ~r/[A-Z]{2,2}/) do
       if Enum.member?(CountryCodes.get_eea_iban_country_codes(), country) do
         :ok
