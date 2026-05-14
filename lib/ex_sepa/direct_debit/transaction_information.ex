@@ -1,9 +1,10 @@
 defmodule ExSepa.DirectDebit.TransactionInformation do
+  alias ExSepa.Validation.Field, as: FieldValidation
+
   @moduledoc false
   # """
   # Direct Debit Transaction Information: Provides information on the individual transaction(s) included in the message.
   # """
-  alias ExSepa.FieldValidation
 
   @enforce_keys [
     :end_to_end_id,
@@ -20,7 +21,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
           mandate_id: String.t(),
           mandate_signing_date: Date.t(),
           debtor_name: String.t(),
-          debtor_address: ExSepa.Address.t() | nil,
+          debtor_address: ExSepa.Schema.Address.t() | nil,
           debtor_iban: String.t(),
           debtor_bic: String.t(),
           remittance_information: String.t()
@@ -157,7 +158,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
     with {:ok, debtor_bic} <- get_creditor_bic(transaction_information),
          {:ok, remittance_information} <- get_remittance_information(transaction_information),
          {:ok, debtor_address} <-
-           ExSepa.Address.get_address(transaction_information, :debtor_address),
+           ExSepa.Schema.Address.get_address(transaction_information, :debtor_address),
          :ok <- FieldValidation.bic(debtor_bic),
          {:ok, new_remittance_information} <-
            FieldValidation.optional_max_text(:remittance_information, remittance_information, 140) do

@@ -1,4 +1,4 @@
-defmodule ExSepa.CountryCodes do
+defmodule ExSepa.Validation.CountryCodes do
   @moduledoc false
 
   @type country_code :: String.t()

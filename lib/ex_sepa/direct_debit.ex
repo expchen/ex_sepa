@@ -87,7 +87,7 @@ defmodule ExSepa.DirectDebit do
   @enforce_keys [:group_header]
   @typedoc false
   @type t :: %__MODULE__{
-          group_header: ExSepa.GroupHeader.t(),
+          group_header: ExSepa.Schema.GroupHeader.t(),
           payment_information: list(ExSepa.DirectDebit.PaymentInformation.t()) | nil
         }
   defstruct [:group_header, :payment_information]
@@ -100,7 +100,7 @@ defmodule ExSepa.DirectDebit do
     * `:initiating_party_name` - Party that initiates the payment. Name by which a party is known and which is usually used to identify that party. Usage: This can either be the creditor or a party that initiates the direct debit on behalf of the creditor.
   """
   @spec new(%{msg_id: String.t(), initiating_party_name: String.t()}) :: ExSepa.DirectDebit.t()
-  def new(group_header), do: ExSepa.PaymentInitiation.new(__MODULE__, group_header)
+  def new(group_header), do: ExSepa.Support.PaymentInitiation.new(__MODULE__, group_header)
 
   @doc """
   Add Payment Information: Set of characteristics that apply to the credit side of the payment transactions included in the direct debit transaction initiation.
@@ -129,7 +129,7 @@ defmodule ExSepa.DirectDebit do
         payment_information
       )
       when is_map(payment_information) do
-    ExSepa.PaymentInitiation.add_payment_information(
+    ExSepa.Support.PaymentInitiation.add_payment_information(
       initiation,
       payment_information,
       ExSepa.DirectDebit.PaymentInformation,
@@ -171,7 +171,7 @@ defmodule ExSepa.DirectDebit do
         transaction_information
       )
       when is_binary(payment_id) and is_map(transaction_information) do
-    ExSepa.PaymentInitiation.add_transaction_information(
+    ExSepa.Support.PaymentInitiation.add_transaction_information(
       initiation,
       payment_id,
       transaction_information,
@@ -180,12 +180,12 @@ defmodule ExSepa.DirectDebit do
     )
   end
 
-  @spec to_xml(ExSepa.DirectDebit.t()) :: String.t()
   @doc """
   Generates the XML data in accordance with the ISO 20022 XML message standard and validates it against the XML Schema.
   """
+  @spec to_xml(ExSepa.DirectDebit.t()) :: String.t()
   def to_xml(%ExSepa.DirectDebit{} = initiation) do
     xml = ExSepa.DirectDebit.CustomerDirectDebitInitiationV08.to_xml(initiation)
-    ExSepa.XmlValidation.validate(xml, "priv/xsd/pain.008.001.08_GBIC_5.xsd")
+    ExSepa.Validation.Xml.validate(xml, "priv/xsd/pain.008.001.08_GBIC_5.xsd")
   end
 end

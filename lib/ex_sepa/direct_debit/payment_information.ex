@@ -1,5 +1,5 @@
 defmodule ExSepa.DirectDebit.PaymentInformation do
-  alias ExSepa.FieldValidation
+  alias ExSepa.Validation.Field, as: FieldValidation
 
   @moduledoc false
   # """
@@ -17,7 +17,7 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
           due_date: Date.t(),
           creditor_id: String.t(),
           creditor_name: String.t(),
-          creditor_address: ExSepa.Address.t() | nil,
+          creditor_address: ExSepa.Schema.Address.t() | nil,
           creditor_iban: String.t(),
           creditor_bic: String.t(),
           sequence_type: sequence_type3_code_atom(),
@@ -131,7 +131,7 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
          {:ok, sequence_type} <- get_sequence_type(payment_information),
          {:ok, transaction_information} <- get_transaction_information(payment_information),
          {:ok, creditor_address} <-
-           ExSepa.Address.get_address(payment_information, :creditor_address),
+           ExSepa.Schema.Address.get_address(payment_information, :creditor_address),
          :ok <- FieldValidation.bic(creditor_bic) do
       {:ok,
        %{

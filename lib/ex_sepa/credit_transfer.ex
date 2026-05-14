@@ -81,7 +81,7 @@ defmodule ExSepa.CreditTransfer do
   @enforce_keys [:group_header]
   @typedoc false
   @type t :: %__MODULE__{
-          group_header: ExSepa.GroupHeader.t(),
+          group_header: ExSepa.Schema.GroupHeader.t(),
           payment_information: list(ExSepa.CreditTransfer.PaymentInformation.t()) | nil
         }
   defstruct [:group_header, :payment_information]
@@ -95,7 +95,7 @@ defmodule ExSepa.CreditTransfer do
   """
   @spec new(%{msg_id: String.t(), initiating_party_name: String.t()}) ::
           ExSepa.CreditTransfer.t()
-  def new(group_header), do: ExSepa.PaymentInitiation.new(__MODULE__, group_header)
+  def new(group_header), do: ExSepa.Support.PaymentInitiation.new(__MODULE__, group_header)
 
   @doc """
   Add Payment Information: set of characteristics that apply to the debit side of the credit transfer transactions.
@@ -108,6 +108,7 @@ defmodule ExSepa.CreditTransfer do
     * `:debtor_iban` - The account number (IBAN) of the Debtor.
     * `:debtor_bic` - OPTIONAL: BIC code of the Debtor PSP. If not provided, `NOTPROVIDED` is used in the Debtor Agent structure. BIC is mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory.
     * `:debtor_address` - OPTIONAL: Structured or hybrid address of the Debtor. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. Address is mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory. More details in `ExSepa.Address`.
+    * `:transaction_information` - OPTIONAL: A prebuilt list of `ExSepa.CreditTransfer.TransactionInformation` structs. This can be used as an alternative to calling `add_transaction_information/3` repeatedly.
   """
   @spec add_payment_information(ExSepa.CreditTransfer.t(), %{
           :debtor_iban => String.t(),
@@ -121,7 +122,7 @@ defmodule ExSepa.CreditTransfer do
         payment_information
       )
       when is_map(payment_information) do
-    ExSepa.PaymentInitiation.add_payment_information(
+    ExSepa.Support.PaymentInitiation.add_payment_information(
       initiation,
       payment_information,
       ExSepa.CreditTransfer.PaymentInformation,
@@ -159,7 +160,7 @@ defmodule ExSepa.CreditTransfer do
         transaction_information
       )
       when is_binary(payment_id) and is_map(transaction_information) do
-    ExSepa.PaymentInitiation.add_transaction_information(
+    ExSepa.Support.PaymentInitiation.add_transaction_information(
       initiation,
       payment_id,
       transaction_information,
@@ -168,10 +169,10 @@ defmodule ExSepa.CreditTransfer do
     )
   end
 
-  @spec to_xml(ExSepa.CreditTransfer.t()) :: String.t()
   @doc """
   Generates the XML data in accordance with the ISO 20022 XML message standard and validates it against the XML Schema.
   """
+  @spec to_xml(ExSepa.CreditTransfer.t()) :: String.t()
   def to_xml(%ExSepa.CreditTransfer{} = initiation) do
     initiation
     |> ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09.to_xml(:sct)
@@ -185,6 +186,6 @@ defmodule ExSepa.CreditTransfer do
   @doc false
   @spec validate_xml(String.t(), Scheme.t()) :: String.t()
   def validate_xml(xml, scheme) do
-    ExSepa.XmlValidation.validate(xml, Scheme.validation_xsd(scheme))
+    ExSepa.Validation.Xml.validate(xml, Scheme.validation_xsd(scheme))
   end
 end

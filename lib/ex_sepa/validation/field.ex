@@ -1,5 +1,5 @@
-defmodule ExSepa.FieldValidation do
-  alias ExSepa.CountryCodes
+defmodule ExSepa.Validation.Field do
+  alias ExSepa.Validation.CountryCodes
 
   @moduledoc false
 
@@ -201,19 +201,19 @@ defmodule ExSepa.FieldValidation do
 
   ## Examples
 
-      iex> ExSepa.FieldValidation.amount(50.0)
+      iex> ExSepa.Validation.Field.amount(50.0)
       :ok
 
-      iex> ExSepa.FieldValidation.amount(0.0)
+      iex> ExSepa.Validation.Field.amount(0.0)
       {:error, "The amount must be more then 0.00"}
 
-      iex> ExSepa.FieldValidation.amount(-53.15)
+      iex> ExSepa.Validation.Field.amount(-53.15)
       {:error, "The amount must be more then 0.00"}
 
-      iex> ExSepa.FieldValidation.amount(4561237531.0)
+      iex> ExSepa.Validation.Field.amount(4561237531.0)
       {:error, "The amount must be less then 999,999,999.99 euro"}
 
-      iex> ExSepa.FieldValidation.amount(30.303)
+      iex> ExSepa.Validation.Field.amount(30.303)
       {:error, "Amount has too many decimal places"}
   """
   @spec amount(float()) :: :ok | {:error, String.t()}
@@ -305,19 +305,19 @@ defmodule ExSepa.FieldValidation do
 
   ## Examples
 
-      iex> ExSepa.FieldValidation.address_mandatory("DE", "", nil)
+      iex> ExSepa.Validation.Field.address_mandatory("DE", "", nil)
       :ok
 
-      iex> ExSepa.FieldValidation.address_mandatory("AD", "", nil)
+      iex> ExSepa.Validation.Field.address_mandatory("AD", "", nil)
       {:error, "BIC is mandatory for non-EEA SEPA country or territory"}
 
-      iex> ExSepa.FieldValidation.address_mandatory("AD", "CASBADADXXX", nil)
+      iex> ExSepa.Validation.Field.address_mandatory("AD", "CASBADADXXX", nil)
       {:error, "Address is mandatory for non-EEA SEPA country or territory"}
 
-      iex> ExSepa.FieldValidation.address_mandatory("AD", "CASBADADXXX", %ExSepa.Address{town_name: "Andorra la Vella", country: "AD"})
+      iex> ExSepa.Validation.Field.address_mandatory("AD", "CASBADADXXX", %ExSepa.Schema.Address{town_name: "Andorra la Vella", country: "AD"})
       :ok
   """
-  @spec address_mandatory(String.t(), String.t(), ExSepa.Address.t() | nil) ::
+  @spec address_mandatory(String.t(), String.t(), ExSepa.Schema.Address.t() | nil) ::
           :ok | {:error, String.t()}
   def address_mandatory(country, bic, address) do
     validate_address_requirements(country, bic, address)
@@ -326,7 +326,7 @@ defmodule ExSepa.FieldValidation do
   @spec validate_address_requirements(
           String.t(),
           String.t(),
-          ExSepa.Address.t() | nil
+          ExSepa.Schema.Address.t() | nil
         ) :: :ok | {:error, String.t()}
   defp validate_address_requirements(country, bic, address) do
     with :ok <- do_pattern_test(country, ~r/[A-Z]{2,2}/) do

@@ -1,5 +1,5 @@
-defmodule ExSepa.GroupHeader do
-  alias ExSepa.FieldValidation
+defmodule ExSepa.Schema.GroupHeader do
+  alias ExSepa.Validation.Field, as: FieldValidation
 
   @moduledoc false
   # """
@@ -29,7 +29,11 @@ defmodule ExSepa.GroupHeader do
     with {:ok, new_msg_id} <- FieldValidation.max_text(:msg_id, msg_id, 35),
          {:ok, new_initiating_party_name} <-
            FieldValidation.max_text(:initiating_party_name, initiating_party_name, 70) do
-      {:ok, %__MODULE__{msg_id: new_msg_id, initiating_party_name: new_initiating_party_name}}
+      {:ok,
+       %__MODULE__{
+         msg_id: new_msg_id,
+         initiating_party_name: new_initiating_party_name
+       }}
     end
   end
 
@@ -53,7 +57,7 @@ defmodule ExSepa.GroupHeader do
   end
 end
 
-defmodule ExSepa.GroupHeaderError do
+defmodule ExSepa.Schema.GroupHeaderError do
   @moduledoc false
   defexception [:message]
 end

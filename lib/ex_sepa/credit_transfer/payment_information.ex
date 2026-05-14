@@ -1,6 +1,6 @@
 defmodule ExSepa.CreditTransfer.PaymentInformation do
   alias ExSepa.CreditTransfer.Scheme
-  alias ExSepa.FieldValidation
+  alias ExSepa.Validation.Field, as: FieldValidation
 
   @instruction_priorities %{High: "HIGH", Normal: "NORM"}
 
@@ -15,7 +15,7 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
           payment_id: String.t(),
           requested_execution_date: Date.t(),
           debtor_name: String.t(),
-          debtor_address: ExSepa.Address.t() | nil,
+          debtor_address: ExSepa.Schema.Address.t() | nil,
           debtor_iban: String.t(),
           debtor_bic: String.t(),
           transaction_information: list(ExSepa.CreditTransfer.TransactionInformation.t()) | nil
@@ -155,7 +155,7 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
     with {:ok, debtor_bic} <- get_debtor_bic(payment_information),
          {:ok, transaction_information} <- get_transaction_information(payment_information),
          {:ok, debtor_address} <-
-           ExSepa.Address.get_address(payment_information, :debtor_address),
+           ExSepa.Schema.Address.get_address(payment_information, :debtor_address),
          {:ok, instruction_priority} <- get_instruction_priority(scheme, payment_information),
          :ok <- FieldValidation.bic(debtor_bic) do
       {:ok,
@@ -247,75 +247,6 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
 end
 
 defmodule ExSepa.CreditTransfer.PaymentInformationError do
-  @moduledoc false
-  defexception [:message]
-end
-
-defmodule ExSepa.CreditTransferInstant.PaymentInformation do
-  alias ExSepa.CreditTransfer.PaymentInformation, as: CreditTransferPaymentInformation
-
-  @moduledoc false
-  # """
-  # Instant Payment Information: SCT Inst-specific payment data built on the shared credit transfer implementation.
-  # """
-
-  @enforce_keys [:payment_id, :requested_execution_date, :debtor_name, :debtor_iban]
-  @typedoc false
-  @type t :: %__MODULE__{
-          payment_id: String.t(),
-          requested_execution_date: Date.t() | DateTime.t(),
-          instruction_priority: String.t(),
-          debtor_name: String.t(),
-          debtor_address: ExSepa.Address.t() | nil,
-          debtor_iban: String.t(),
-          debtor_bic: String.t(),
-          transaction_information:
-            list(ExSepa.CreditTransferInstant.TransactionInformation.t()) | nil
-        }
-
-  defstruct [
-    :payment_id,
-    :requested_execution_date,
-    :debtor_name,
-    :debtor_address,
-    :debtor_iban,
-    instruction_priority: "",
-    debtor_bic: "",
-    transaction_information: []
-  ]
-
-  @doc false
-  # """
-  # Add Payment Information: SCT Inst-specific payment information backed by the shared credit transfer logic.
-
-  # The map has the following keys:
-
-  #   * `:payment_id` - Unique identification, as assigned by a sending party, to unambiguously identify the payment information group within the message (maximum length of 35 characters).
-  #   * `:requested_execution_date` - The Requested Execution Date of the SCT Inst instruction. A `Date` must be today or a future date. A `DateTime` must not be in the past.
-  #   * `:instruction_priority` - OPTIONAL: Instruction priority for the SCT Inst instruction. Allowed values are `:High`, `:Normal`, `"HIGH"` and `"NORM"`.
-  #   * `:debtor_name` - The Name of the Debtor / Originator (maximum length of 70 characters).
-  #   * `:debtor_iban` - The account number (IBAN) of the Debtor / Originator.
-  #   * `:debtor_bic` - OPTIONAL: BIC code of the Debtor PSP. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory.
-  #   * `:debtor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
-  # """
-  @spec new(%{
-          :payment_id => String.t(),
-          :requested_execution_date => Date.t() | DateTime.t(),
-          :debtor_name => String.t(),
-          :debtor_iban => String.t(),
-          optional(atom()) => any()
-        }) :: {:error, String.t()} | {:ok, __MODULE__.t()}
-  def new(transaction_information),
-    do:
-      CreditTransferPaymentInformation.build(
-        :sct_inst,
-        __MODULE__,
-        @enforce_keys,
-        transaction_information
-      )
-end
-
-defmodule ExSepa.CreditTransferInstant.PaymentInformationError do
   @moduledoc false
   defexception [:message]
 end

@@ -1,6 +1,6 @@
-defmodule ExSepa.Address do
+defmodule ExSepa.Schema.Address do
   import XmlBuilder
-  alias ExSepa.FieldValidation
+  alias ExSepa.Validation.Field, as: FieldValidation
 
   @required_fields [:town_name, :country]
 
@@ -301,11 +301,11 @@ defmodule ExSepa.Address do
   @spec get_address(
           map(),
           :debtor_address | :creditor_address
-        ) :: :ok | {:error, any()} | {:ok, nil | ExSepa.Address.t()}
+        ) :: :ok | {:error, any()} | {:ok, nil | ExSepa.Schema.Address.t()}
   def get_address(map, address_atom) do
     case Map.fetch(map, address_atom) do
       {:ok, address} when is_map(address) ->
-        ExSepa.Address.new(address)
+        ExSepa.Schema.Address.new(address)
 
       {:ok, _address} ->
         {:error, "#{address_atom}: must be a map"}
@@ -316,8 +316,8 @@ defmodule ExSepa.Address do
   end
 
   @doc false
-  @spec to_xml(ExSepa.Address.t()) :: {atom(), any(), any()}
-  def to_xml(%ExSepa.Address{} = address_map) do
+  @spec to_xml(ExSepa.Schema.Address.t()) :: {atom(), any(), any()}
+  def to_xml(%ExSepa.Schema.Address{} = address_map) do
     element(:PstlAdr, nil, [
       if address_map.department != nil do
         element(:Dept, nil, address_map.department)

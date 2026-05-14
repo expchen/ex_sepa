@@ -1,4 +1,4 @@
-defmodule ExSepa.XmlValidation do
+defmodule ExSepa.Validation.Xml do
   @moduledoc false
 
   @spec validate(String.t(), String.t()) :: String.t()
@@ -11,7 +11,12 @@ defmodule ExSepa.XmlValidation do
         xml
 
       {:error, [{:exception, {:error, message}}, _stack, _received]} ->
-        raise ExSepa.XmlError, message: to_string(message)
+        raise ExSepa.Validation.XmlError, message: to_string(message)
     end
   end
+end
+
+defmodule ExSepa.Validation.XmlError do
+  @moduledoc false
+  defexception [:message]
 end

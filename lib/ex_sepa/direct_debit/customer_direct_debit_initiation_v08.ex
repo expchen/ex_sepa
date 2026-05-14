@@ -80,7 +80,7 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
 
   @doc false
   defp to_xml_group_header(
-         %ExSepa.GroupHeader{} = group_header,
+         %ExSepa.Schema.GroupHeader{} = group_header,
          number_of_transactions,
          control_sum
        ) do
@@ -246,6 +246,7 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
   end
 
   @doc false
-  @spec to_xml_address(ExSepa.Address.t()) :: {atom(), any(), any()}
-  def to_xml_address(%ExSepa.Address{} = address_map), do: ExSepa.Address.to_xml(address_map)
+  @spec to_xml_address(ExSepa.Schema.Address.t()) :: {atom(), any(), any()}
+  def to_xml_address(%ExSepa.Schema.Address{} = address_map),
+    do: ExSepa.Schema.Address.to_xml(address_map)
 end

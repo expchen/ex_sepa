@@ -1,14 +1,14 @@
-defmodule ExSepa.PaymentInitiation do
+defmodule ExSepa.Support.PaymentInitiation do
   @moduledoc false
 
   @spec new(module(), map()) :: struct()
   def new(module, group_header) do
-    case ExSepa.GroupHeader.new(group_header) do
+    case ExSepa.Schema.GroupHeader.new(group_header) do
       {:ok, parsed_group_header} ->
         struct(module, group_header: parsed_group_header)
 
       {:error, e} ->
-        raise ExSepa.GroupHeaderError, message: e
+        raise ExSepa.Schema.GroupHeaderError, message: e
     end
   end
 

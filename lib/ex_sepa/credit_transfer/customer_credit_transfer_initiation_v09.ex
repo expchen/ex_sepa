@@ -18,8 +18,7 @@ defmodule ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09 do
   @spec to_xml(
           ExSepa.CreditTransfer.t() | ExSepa.CreditTransferInstant.t(),
           Scheme.t()
-        ) ::
-          String.t()
+        ) :: String.t()
   def to_xml(credit_transfer, scheme) when scheme in [:sct, :sct_inst] do
     {payment_information_xml, number_of_transactions, control_sum} =
       do_to_xml({credit_transfer.payment_information, 0, 0.0}, scheme)
@@ -155,7 +154,7 @@ defmodule ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09 do
 
   @doc false
   def to_xml_group_header(
-        %ExSepa.GroupHeader{} = group_header,
+        %ExSepa.Schema.GroupHeader{} = group_header,
         number_of_transactions,
         control_sum
       ) do
@@ -228,29 +227,12 @@ defmodule ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09 do
   end
 
   @doc false
-  @spec to_xml_address(ExSepa.Address.t()) :: {atom(), any(), any()}
-  def to_xml_address(%ExSepa.Address{} = address_map), do: ExSepa.Address.to_xml(address_map)
+  @spec to_xml_address(ExSepa.Schema.Address.t()) :: {atom(), any(), any()}
+  def to_xml_address(%ExSepa.Schema.Address{} = address_map),
+    do: ExSepa.Schema.Address.to_xml(address_map)
 
   defp to_xml_requested_execution_date(%Date{} = date, _scheme), do: element(:Dt, nil, date)
 
   defp to_xml_requested_execution_date(%DateTime{} = datetime, :sct_inst),
     do: element(:DtTm, nil, DateTime.to_iso8601(datetime))
-end
-
-defmodule ExSepa.CreditTransferInstant.CustomerCreditTransferInitiationV09 do
-  alias ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09,
-    as: CreditTransferXml
-
-  @moduledoc false
-  # """
-  # CustomerCreditTransferInitiationV09 (pain.001.001.09)
-
-  # The SCT Inst XML builder delegates to the shared credit transfer XML builder
-  # and applies the instant scheme differences (`INST`, `InstrPrty`, `DtTm`).
-  # """
-
-  @doc false
-  @spec to_xml(ExSepa.CreditTransferInstant.t()) :: String.t()
-  def to_xml(%ExSepa.CreditTransferInstant{} = credit_transfer),
-    do: CreditTransferXml.to_xml(credit_transfer, :sct_inst)
 end
