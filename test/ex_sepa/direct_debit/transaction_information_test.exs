@@ -1,16 +1,19 @@
 defmodule ExSepa.DirectDebit.TransactionInformationTest do
   use ExUnit.Case, async: true
-  import ExSepa.CountryCodes, only: [get_eea_iban_country_codes: 0]
+  import ExSepa.Validation.CountryCodes, only: [get_eea_iban_country_codes: 0]
+  import ExSepa.TestSupport.FactoryHelpers
   doctest ExSepa.DirectDebit.TransactionInformation
 
-  describe "ExSepa.DirectDebit.TransactionInformation new" do
+  describe "ExSepa.DirectDebit.TransactionInformation.new/1" do
+    # Transaction-level DD tests focus on debtor-side mandate and collection data.
+    # Fixed CH examples are reserved for non-EEA cases so the mandatory BIC/address rule stays explicit.
     test "ok" do
-      endtoendid = Faker.Gov.Us.ssn()
-      amount = Faker.Commerce.price()
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -34,18 +37,14 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
     end
 
     test "with BIC - ok" do
-      endtoendid = Faker.Gov.Us.ssn()
-      amount = Faker.Commerce.price()
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
-      [debtor_bic | _] =
-        Regex.run(
-          ~r/[A-Z0-9]{4,4}[A-Z]{2,2}[A-Z0-9]{2,2}([A-Z0-9]{3,3}){0,1}/,
-          Faker.Util.format("%#{Faker.random_between(8, 11)}A")
-        )
+      debtor_bic = example_bic()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -70,18 +69,13 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
     end
 
     test "with BIC and remittance_information - ok" do
-      endtoendid = Faker.Gov.Us.ssn()
-      amount = Faker.Commerce.price()
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
-
-      [debtor_bic | _] =
-        Regex.run(
-          ~r/[A-Z0-9]{4,4}[A-Z]{2,2}[A-Z0-9]{2,2}([A-Z0-9]{3,3}){0,1}/,
-          Faker.Util.format("%#{Faker.random_between(8, 11)}A")
-        )
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
+      debtor_bic = example_bic()
 
       remittance_information = Faker.Beer.yeast()
 
@@ -104,35 +98,78 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                   debtor_name: debtor_name,
                   debtor_iban: debtor_iban,
                   debtor_bic: debtor_bic,
-                  remittance_information:
-                    remittance_information
-                    |> String.replace("ä", "a")
-                    |> String.replace("ö", "o")
-                    |> String.replace("ü", "u")
-                    |> String.replace("Ä", "a")
-                    |> String.replace("Ö", "o")
-                    |> String.replace("Ü", "u")
-                    |> String.replace("ß", "s")
-                    |> String.replace("&", "+")
-                    |> String.replace("*", ".")
-                    |> String.replace("$", ".")
-                    |> String.replace("%", ".")
+                  remittance_information: normalize_text(remittance_information)
                 }}
     end
 
-    test "with BIC and remittance_information - ok: with & in remittance_information" do
-      endtoendid = Faker.Gov.Us.ssn()
-      amount = Faker.Commerce.price()
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+    test "with hybrid debtor address - ok" do
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
 
-      [debtor_bic | _] =
-        Regex.run(
-          ~r/[A-Z0-9]{4,4}[A-Z]{2,2}[A-Z0-9]{2,2}([A-Z0-9]{3,3}){0,1}/,
-          Faker.Util.format("%#{Faker.random_between(8, 11)}A")
-        )
+      address_lines = [Faker.Address.street_address()]
+
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
+               end_to_end_id: endtoendid,
+               amount: amount,
+               mandate_id: mndt_id,
+               mandate_signing_date: mndt_date,
+               debtor_name: debtor_name,
+               debtor_iban: "CH7280005000088877766",
+               debtor_bic: "RAIFCH22005",
+               debtor_address: %{
+                 town_name: "Zurich",
+                 country: "CH",
+                 address_lines: address_lines
+               }
+             }) ==
+               {:ok,
+                %ExSepa.DirectDebit.TransactionInformation{
+                  end_to_end_id: endtoendid,
+                  amount: amount,
+                  mandate_id: mndt_id,
+                  mandate_signing_date: mndt_date,
+                  debtor_name: debtor_name,
+                  debtor_iban: "CH7280005000088877766",
+                  debtor_bic: "RAIFCH22005",
+                  debtor_address: %ExSepa.Schema.Address{
+                    town_name: "Zurich",
+                    country: "CH",
+                    address_lines: address_lines
+                  },
+                  remittance_information: ""
+                }}
+    end
+
+    test "fail: debtor_address is not a map" do
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
+
+      assert ExSepa.DirectDebit.TransactionInformation.new(%{
+               end_to_end_id: endtoendid,
+               amount: amount,
+               mandate_id: mndt_id,
+               mandate_signing_date: mndt_date,
+               debtor_name: debtor_name,
+               debtor_iban: debtor_iban,
+               debtor_address: "Zurich"
+             }) == {:error, "debtor_address: must be a map"}
+    end
+
+    test "remittance_information normalizes special characters" do
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
+      debtor_bic = example_bic()
 
       remittance_information = Faker.Beer.yeast()
 
@@ -157,31 +194,19 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                    debtor_address: nil,
                    debtor_iban: debtor_iban,
                    debtor_bic: debtor_bic,
-                   remittance_information:
-                     ("+" <> remittance_information)
-                     |> String.replace("ä", "a")
-                     |> String.replace("ö", "o")
-                     |> String.replace("ü", "u")
-                     |> String.replace("Ä", "a")
-                     |> String.replace("Ö", "o")
-                     |> String.replace("Ü", "u")
-                     |> String.replace("ß", "s")
-                     |> String.replace("&", "+")
-                     |> String.replace("*", ".")
-                     |> String.replace("$", ".")
-                     |> String.replace("%", ".")
+                   remittance_information: normalize_text("&" <> remittance_information)
                  }
                }
     end
 
-    test "endtoendid - fail UTF-8" do
+    test "fail: end_to_end_id wrong type" do
       endtoendid = 951_753
-      amount = Faker.Commerce.price()
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
+      amount = example_amount()
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
       # VA not in Faker IBAN list
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -195,13 +220,13 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                 "Parameters must be strings. - end_to_end_id: must be UTF-8 encoded binary"}
     end
 
-    test "endtoendid - fail latin character set" do
+    test "fail: end_to_end_id contains unsupported characters" do
       endtoendid = Faker.Person.Hy.name()
-      amount = Faker.Commerce.price()
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      amount = example_amount()
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert match?(
                {:error, _},
@@ -216,13 +241,13 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
              )
     end
 
-    test "endtoendid - fail length" do
+    test "fail: end_to_end_id too long" do
       endtoendid = Faker.Util.join(5, "-", &Faker.Gov.Us.ssn/0)
-      amount = Faker.Commerce.price()
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      amount = example_amount()
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -235,13 +260,13 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                {:error, "end_to_end_id: Maximum length of 35 characters"}
     end
 
-    test "amount - fail UTF-8" do
-      endtoendid = Faker.Gov.Us.ssn()
+    test "fail: amount wrong type" do
+      endtoendid = example_end_to_end_id()
       amount = Date.utc_today()
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -251,16 +276,17 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                debtor_name: debtor_name,
                debtor_iban: debtor_iban
              }) ==
-               {:error, "amount must be a float(18.2)"}
+               {:error,
+                "amount must be a positive number with up to 2 decimal places, e.g. 18.2 or 18.02"}
     end
 
-    test "amount - fail 0" do
-      endtoendid = Faker.Gov.Us.ssn()
+    test "fail: amount is integer zero" do
+      endtoendid = example_end_to_end_id()
       amount = 0
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -270,16 +296,17 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                debtor_name: debtor_name,
                debtor_iban: debtor_iban
              }) ==
-               {:error, "amount must be a float(18.2)"}
+               {:error,
+                "amount must be a positive number with up to 2 decimal places, e.g. 18.2 or 18.02"}
     end
 
-    test "amount - fail 0.0" do
-      endtoendid = Faker.Gov.Us.ssn()
+    test "fail: amount is 0.0" do
+      endtoendid = example_end_to_end_id()
       amount = 0.0
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -292,13 +319,13 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                {:error, "The amount must be more then 0.00"}
     end
 
-    test "amount - fail negativ" do
-      endtoendid = Faker.Gov.Us.ssn()
+    test "fail: amount is negative" do
+      endtoendid = example_end_to_end_id()
       amount = -50.20
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -311,13 +338,13 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                {:error, "The amount must be more then 0.00"}
     end
 
-    test "amount - fail too high" do
-      endtoendid = Faker.Gov.Us.ssn()
+    test "fail: amount is too high" do
+      endtoendid = example_end_to_end_id()
       amount = 1_999_999_999.00
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -330,13 +357,13 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                {:error, "The amount must be less then 999,999,999.99 euro"}
     end
 
-    test "amount - fail too many decimal places" do
-      endtoendid = Faker.Gov.Us.ssn()
+    test "fail: amount has too many decimal places" do
+      endtoendid = example_end_to_end_id()
       amount = 50.2053
-      mndt_id = Faker.Gov.Us.ein()
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      mndt_id = example_mandate_id()
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -350,12 +377,12 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
     end
 
     test "mndt_id - fail UTF-8" do
-      endtoendid = Faker.Gov.Us.ssn()
-      amount = Faker.Commerce.price()
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
       mndt_id = 123_789
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -369,12 +396,12 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
     end
 
     test "mndt_id - fail other" do
-      endtoendid = Faker.Gov.Us.ssn()
-      amount = Faker.Commerce.price()
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
       mndt_id = Faker.Util.join(5, "-", &Faker.Gov.Us.ein/0)
-      mndt_date = Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
-      debtor_name = Faker.Person.name()
-      debtor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      mndt_date = example_past_date()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.TransactionInformation.new(%{
                end_to_end_id: endtoendid,
@@ -678,5 +705,9 @@ defmodule ExSepa.DirectDebit.TransactionInformationTest do
                {:error,
                 "Parameters must be strings. - remittance_information: must be UTF-8 encoded binary"}
     end
+  end
+
+  defp example_past_date do
+    Faker.Date.backward(Faker.Random.Elixir.random_between(60, 900))
   end
 end

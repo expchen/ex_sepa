@@ -1,14 +1,15 @@
 defmodule ExSepa.DirectDebit.PaymentInformationTest do
   use ExUnit.Case, async: true
-  import ExSepa.CountryCodes, only: [get_eea_iban_country_codes: 0]
+  import ExSepa.Validation.CountryCodes, only: [get_eea_iban_country_codes: 0]
+  import ExSepa.TestSupport.FactoryHelpers
   doctest ExSepa.DirectDebit.PaymentInformation
 
-  describe "ExSepa.DirectDebit.PaymentInformation new" do
+  describe "ExSepa.DirectDebit.PaymentInformation.new/1" do
     test "ok" do
-      payment_id = Faker.Gov.Us.ein()
+      payment_id = example_payment_id()
       date = Date.utc_today() |> Date.add(3)
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -28,10 +29,10 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
     end
 
     test "with BIC - ok" do
-      payment_id = Faker.Gov.Us.ein()
+      payment_id = example_payment_id()
       date = Date.utc_today() |> Date.add(3)
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -52,11 +53,34 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 }}
     end
 
-    test "with BIC and sequence_type - ok" do
-      payment_id = Faker.Gov.Us.ein()
+    test "creditor_name normalizes special characters" do
+      payment_id = example_payment_id()
       date = Date.utc_today() |> Date.add(3)
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = "Müller & Partner"
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.DirectDebit.PaymentInformation.new(%{
+               payment_id: payment_id,
+               due_date: date,
+               creditor_id: "CIDZZZ00000001",
+               creditor_name: creditor_name,
+               creditor_iban: creditor_iban
+             }) ==
+               {:ok,
+                %ExSepa.DirectDebit.PaymentInformation{
+                  payment_id: payment_id,
+                  due_date: date,
+                  creditor_id: "CIDZZZ00000001",
+                  creditor_name: normalize_text(creditor_name),
+                  creditor_iban: creditor_iban
+                }}
+    end
+
+    test "with BIC and sequence_type - ok" do
+      payment_id = example_payment_id()
+      date = Date.utc_today() |> Date.add(3)
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -80,10 +104,10 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
     end
 
     test "with address - ok" do
-      payment_id = Faker.Gov.Us.ein()
+      payment_id = example_payment_id()
       date = Date.utc_today() |> Date.add(3)
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       city = Faker.Address.city()
       country_codes = Enum.drop(get_eea_iban_country_codes(), -1)
@@ -106,15 +130,72 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                   creditor_id: "CIDZZZ00000001",
                   creditor_name: creditor_name,
                   creditor_iban: creditor_iban,
-                  creditor_address: %ExSepa.Address{town_name: city, country: country}
+                  creditor_address: %ExSepa.Schema.Address{town_name: city, country: country}
                 }}
     end
 
-    test "fail: wrong payment_id 1" do
+    test "with hybrid address - ok" do
+      payment_id = example_payment_id()
+      date = Date.utc_today() |> Date.add(3)
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
+
+      city = Faker.Address.city()
+      country_codes = Enum.drop(get_eea_iban_country_codes(), -1)
+
+      country =
+        Enum.at(country_codes, Faker.Random.Elixir.random_between(0, length(country_codes) - 1))
+
+      address_lines = [Faker.Address.street_address(), Faker.Address.secondary_address()]
+
+      assert ExSepa.DirectDebit.PaymentInformation.new(%{
+               payment_id: payment_id,
+               due_date: date,
+               creditor_id: "CIDZZZ00000001",
+               creditor_name: creditor_name,
+               creditor_iban: creditor_iban,
+               creditor_address: %{
+                 town_name: city,
+                 country: country,
+                 address_lines: address_lines
+               }
+             }) ==
+               {:ok,
+                %ExSepa.DirectDebit.PaymentInformation{
+                  payment_id: payment_id,
+                  due_date: date,
+                  creditor_id: "CIDZZZ00000001",
+                  creditor_name: creditor_name,
+                  creditor_iban: creditor_iban,
+                  creditor_address: %ExSepa.Schema.Address{
+                    town_name: city,
+                    country: country,
+                    address_lines: address_lines
+                  }
+                }}
+    end
+
+    test "fail: creditor_address is not a map" do
+      payment_id = example_payment_id()
+      date = Date.utc_today() |> Date.add(3)
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.DirectDebit.PaymentInformation.new(%{
+               payment_id: payment_id,
+               due_date: date,
+               creditor_id: "CIDZZZ00000001",
+               creditor_name: creditor_name,
+               creditor_iban: creditor_iban,
+               creditor_address: "Berlin"
+             }) == {:error, "creditor_address: must be a map"}
+    end
+
+    test "fail: payment_id too long" do
       payment_id = Faker.Util.format("%3A-ID-%#{Faker.random_between(35, 50)}d")
       date = Date.utc_today() |> Date.add(3)
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -125,10 +206,10 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
              }) == {:error, "payment_id: Maximum length of 35 characters"}
     end
 
-    test "fail: wrong payment_id 2" do
+    test "fail: payment_id wrong type" do
       date = Date.utc_today() |> Date.add(3)
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: 00_000_001,
@@ -140,11 +221,11 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                {:error, "Parameters must be strings. - payment_id: must be UTF-8 encoded binary"}
     end
 
-    test "fail: wrong date 1" do
-      payment_id = Faker.Gov.Us.ein()
+    test "fail: due_date is not in the future" do
+      payment_id = example_payment_id()
       date = Date.utc_today()
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -155,11 +236,11 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
              }) == {:error, "The due date must be in the future."}
     end
 
-    test "fail: wrong date 2" do
-      payment_id = Faker.Gov.Us.ein()
+    test "fail: due_date is not a date" do
+      payment_id = example_payment_id()
       date = "text"
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -170,12 +251,12 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
              }) == {:error, "Parameter due_date must be a date"}
     end
 
-    test "fail: wrong creditor_id 1" do
-      payment_id = Faker.Gov.Us.ein()
+    test "fail: creditor_id too long" do
+      payment_id = example_payment_id()
       date = Date.utc_today() |> Date.add(3)
       creditor_id = Faker.Util.format("%3AZZZ%#{Faker.random_between(35, 50)}d")
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -186,11 +267,11 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
              }) == {:error, "creditor_id: Maximum length of 35 characters"}
     end
 
-    test "fail: wrong creditor_id 2" do
-      payment_id = Faker.Gov.Us.ein()
+    test "fail: creditor_id wrong type" do
+      payment_id = example_payment_id()
       date = Date.utc_today() |> Date.add(3)
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -202,8 +283,8 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                {:error, "Parameters must be strings. - creditor_id: must be UTF-8 encoded binary"}
     end
 
-    test "fail: wrong Name 1" do
-      payment_id = Faker.Gov.Us.ein()
+    test "fail: creditor_name too long" do
+      payment_id = example_payment_id()
       date = Date.utc_today() |> Date.add(3)
 
       creditor_name =
@@ -211,7 +292,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
           "%1A%#{Faker.random_between(34, 40)}a %1A%#{Faker.random_between(34, 40)}a"
         )
 
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -222,11 +303,11 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
              }) == {:error, "creditor_name: Maximum length of 70 characters"}
     end
 
-    test "fail: wrong Name 2" do
-      payment_id = Faker.Gov.Us.ein()
+    test "fail: creditor_name wrong type" do
+      payment_id = example_payment_id()
       date = Date.utc_today() |> Date.add(3)
       creditor_name = Date.utc_today() |> Date.add(3)
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -239,7 +320,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 "Parameters must be strings. - creditor_name: must be UTF-8 encoded binary"}
     end
 
-    test "fail: wrong IBAN 1" do
+    test "fail: creditor_iban invalid" do
       payment_id = Faker.Gov.Us.ein()
       date = Date.utc_today() |> Date.add(3)
       creditor_name = Faker.Team.name()
@@ -258,7 +339,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
              )
     end
 
-    test "fail: wrong IBAN 2" do
+    test "fail: creditor_iban wrong type" do
       payment_id = Faker.Gov.Us.ein()
       date = Date.utc_today() |> Date.add(3)
       creditor_name = Faker.Team.name()
@@ -274,7 +355,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 "Parameters must be strings. - creditor_iban: must be UTF-8 encoded binary"}
     end
 
-    test "with BIC - fail: wrong BIC 1" do
+    test "fail: creditor_bic invalid" do
       payment_id = Faker.Gov.Us.ein()
       date = Date.utc_today() |> Date.add(3)
       creditor_name = Faker.Team.name()
@@ -291,7 +372,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                {:error, "BIC is not valid"}
     end
 
-    test "with BIC - fail: wrong BIC 2" do
+    test "fail: creditor_bic wrong type" do
       payment_id = Faker.Gov.Us.ein()
       date = Date.utc_today() |> Date.add(3)
       creditor_name = Faker.Team.name()
@@ -309,7 +390,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 "Parameters must be strings. - creditor_bic: must be UTF-8 encoded binary"}
     end
 
-    test "with BIC and sequence_type - fail: wrong sequence_type 1" do
+    test "fail: sequence_type invalid value" do
       payment_id = Faker.Gov.Us.ein()
       date = Date.utc_today() |> Date.add(3)
       creditor_name = Faker.Team.name()
@@ -327,11 +408,11 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 "Parameter sequence_type must be an atom :OneOff, :First, :Recurring, :Final"}
     end
 
-    test "with BIC and sequence_type - fail: wrong sequence_type 2" do
-      payment_id = Faker.Gov.Us.ein()
+    test "fail: sequence_type wrong type" do
+      payment_id = example_payment_id()
       date = Date.utc_today() |> Date.add(3)
-      creditor_name = Faker.Team.name()
-      creditor_iban = Faker.Code.Iban.iban(Enum.drop(get_eea_iban_country_codes(), -1))
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
 
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
@@ -347,10 +428,10 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
 
     test "error: missing key :creditor_iban" do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
-               payment_id: Faker.Gov.Us.ein(),
+               payment_id: example_payment_id(),
                due_date: Date.utc_today() |> Date.add(3),
                creditor_id: "DE98ZZZ09999999999",
-               creditor_name: Faker.Team.name()
+               creditor_name: example_organisation_name()
              }) ==
                {:error, "missing keys: [:creditor_iban]"}
     end

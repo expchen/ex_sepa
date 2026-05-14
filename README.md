@@ -18,6 +18,14 @@ def deps do
 end
 ```
 
+## Test
+
+Run tests with:
+
+```bash
+mix test
+```
+
 ## Documentation
 
 Once published, the docs can be found at <https://hexdocs.pm/ex_sepa>.

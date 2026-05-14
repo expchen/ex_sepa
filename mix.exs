@@ -11,6 +11,7 @@ defmodule ExSepa.MixProject do
       description:
         "ExSepa is an Elixir library for generating SEPA Direct Debit and Credit Transfer XML messages",
       package: package(),
+      test_ignore_filters: [~r"^test/test_support/"],
 
       # Docs
       name: "ExSepa",
