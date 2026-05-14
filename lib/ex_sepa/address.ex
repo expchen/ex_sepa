@@ -2,15 +2,18 @@ defmodule ExSepa.Address do
   import XmlBuilder
   alias ExSepa.FieldValidation
 
+  @required_fields [:town_name, :country]
+
   @moduledoc """
-  Postal Address: Structured and hybrid addresses are supported.
+  Postal Address: only structured and hybrid addresses are supported.
+  Unstructured addresses are not supported.
   """
 
-  @enforce_keys [:town_name, :country]
   @typedoc """
   Address information are only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory.
   At least `:town_name` and `:country` must be used.
-  Hybrid addresses can additionally use up to two `:address_lines`.
+  Hybrid addresses may additionally use up to two `:address_lines`.
+  Unstructured addresses are not supported.
 
   The map has the following keys:
     * `:town_name` Name of a built-up area, with defined boundaries, and a local government (maximum length of 35 characters).
@@ -28,45 +31,21 @@ defmodule ExSepa.Address do
     * `:district_name` OPTIONAL: Identifies a subdivision within a country subdivision (maximum length of 35 characters).
     * `:country_sub_division` OPTIONAL: Identifies a subdivision of a country such as state, region, county (maximum length of 35 characters).
     * `:address_lines` OPTIONAL: Up to two address lines for a hybrid address (maximum length of 70 characters per line).
-
-  ## Example
-
-      ExSepa.DirectDebit.new(%{msg_id: "Msg-ID-004",
-        initiating_party_name: "Initiating Party"})
-        |> ExSepa.DirectDebit.add_payment_information(
-          %{payment_id: "Payment-ID-0004",
-            due_date: Date.utc_today() |> Date.add(5),
-            creditor_id: "DE00ZZZ00099999999",
-            creditor_name: "Creditor Name",
-            creditor_iban: "DE87200500001234567890",
-            creditor_address: %{town_name: "Berlin", country: "DE"}})
-        |> ExSepa.DirectDebit.add_transaction_information(
-          "Payment-ID-0004",
-          %{end_to_end_id: "EndToEndId-0004",
-            amount: 444.40,
-            mandate_id: "Mandate-Id-04",
-            mandate_signing_date: ~D[2024-04-24],
-            debtor_name: "Debtor Name",
-            debtor_iban: "AD6510434606G73BA76MI9TE",
-            debtor_bic: "CASBADADXXX",
-            debtor_address: %{town_name: "Andorra la Vella", country: "AD"},
-            remittance_information: "Invoice Example 0004"})
-        |> ExSepa.DirectDebit.to_xml()
   """
   @type t :: %__MODULE__{
-          department: String.t(),
-          sub_department: String.t(),
-          street_name: String.t(),
-          building_number: String.t(),
-          building_name: String.t(),
-          floor: String.t(),
-          post_box: String.t(),
-          room: String.t(),
-          post_code: String.t(),
+          department: String.t() | nil,
+          sub_department: String.t() | nil,
+          street_name: String.t() | nil,
+          building_number: String.t() | nil,
+          building_name: String.t() | nil,
+          floor: String.t() | nil,
+          post_box: String.t() | nil,
+          room: String.t() | nil,
+          post_code: String.t() | nil,
           town_name: String.t(),
-          town_location_name: String.t(),
-          district_name: String.t(),
-          country_sub_division: String.t(),
+          town_location_name: String.t() | nil,
+          district_name: String.t() | nil,
+          country_sub_division: String.t() | nil,
           country: String.t(),
           address_lines: list(String.t()) | nil
         }
@@ -88,17 +67,20 @@ defmodule ExSepa.Address do
     :address_lines
   ]
 
-  @doc false
-  @spec new(%{town_name: String.t(), country: String.t()}) ::
-          {:error, String.t()} | {:ok, __MODULE__.t()}
-  def new(%{town_name: town_name, country: country} = payment_information)
-      when is_binary(town_name) and is_binary(country) do
-    with {:ok, new_town_name} <- FieldValidation.max_text(:town_name, town_name, 35),
-         :ok <- FieldValidation.country_code(country),
-         {:ok, optional_data} <- get_optional_data(payment_information) do
+  @doc """
+  Builds an address using the default SCT validation rules.
+  """
+  @spec new(map()) :: {:error, String.t()} | {:ok, __MODULE__.t()}
+  def new(address_map) when is_map(address_map) do
+    with :ok <- reject_unstructured_address(address_map),
+         :ok <- validate_required_keys(address_map),
+         {:ok, town_name} <- get_required_text(address_map, :town_name, 35),
+         {:ok, country} <- get_required_country(address_map),
+         {:ok, optional_data} <- get_optional_data(address_map),
+         :ok <- validate_hybrid_address_lines(town_name, country, optional_data) do
       {:ok,
        %__MODULE__{
-         town_name: new_town_name,
+         town_name: town_name,
          country: country,
          department: optional_data.department,
          sub_department: optional_data.sub_department,
@@ -117,23 +99,38 @@ defmodule ExSepa.Address do
     end
   end
 
-  def new(address_map) when is_map(address_map) do
-    missing_keys = @enforce_keys -- Map.keys(address_map)
+  def new(_address), do: {:error, "address: must be a map"}
+
+  defp validate_required_keys(address_map) do
+    missing_keys = @required_fields -- Map.keys(address_map)
 
     if missing_keys == [] do
-      FieldValidation.text(
-        [
-          {:town_name, address_map[:town_name]},
-          {:country, address_map[:country]}
-        ],
-        "Parameters must be strings."
-      )
+      :ok
     else
       {:error, "missing keys: " <> Macro.to_string(quote do: unquote(missing_keys))}
     end
   end
 
-  def new(_address), do: {:error, "address: must be a map"}
+  defp reject_unstructured_address(address_map) do
+    has_address_lines = Map.has_key?(address_map, :address_lines)
+    has_town_name = Map.has_key?(address_map, :town_name)
+    has_country = Map.has_key?(address_map, :country)
+
+    cond do
+      not has_address_lines ->
+        :ok
+
+      has_town_name and has_country ->
+        :ok
+
+      has_town_name ->
+        :ok
+
+      true ->
+        {:error,
+         "unstructured addresses are not supported; address_lines require both town_name and country"}
+    end
+  end
 
   defp get_optional_data(payment_information) do
     with {:ok, department} <- get_text(payment_information, :department, 70),
@@ -168,6 +165,35 @@ defmodule ExSepa.Address do
     end
   end
 
+  defp get_required_text(address_map, field, length) do
+    case Map.fetch(address_map, field) do
+      {:ok, value} when is_binary(value) ->
+        FieldValidation.max_text(field, value, length)
+
+      {:ok, value} ->
+        FieldValidation.text([{field, value}], "Parameters must be strings.")
+
+      :error ->
+        {:error, "missing keys: [#{inspect(field)}]"}
+    end
+  end
+
+  defp get_required_country(address_map) do
+    case Map.fetch(address_map, :country) do
+      {:ok, country} when is_binary(country) ->
+        case FieldValidation.country_code(country) do
+          :ok -> {:ok, country}
+          {:error, _} = error -> error
+        end
+
+      {:ok, country} ->
+        FieldValidation.text([{:country, country}], "Parameters must be strings.")
+
+      :error ->
+        {:error, "missing keys: [:country]"}
+    end
+  end
+
   defp get_text(payment_information, field, length) do
     case Map.fetch(payment_information, field) do
       {:ok, value} when is_binary(value) ->
@@ -194,7 +220,8 @@ defmodule ExSepa.Address do
     end
   end
 
-  defp validate_address_lines([]), do: {:error, "address_lines: must contain 1 or 2 lines"}
+  defp validate_address_lines([]),
+    do: {:error, "address_lines: must contain 1 or 2 lines"}
 
   defp validate_address_lines(address_lines) when length(address_lines) > 2,
     do: {:error, "address_lines: must contain at most 2 lines"}
@@ -219,10 +246,58 @@ defmodule ExSepa.Address do
     )
   end
 
-  @doc false
-  # """
-  # Searches for the address of the creditor or debtor in the transferred map and returns it in a structured form.
-  # """
+  defp validate_hybrid_address_lines(town_name, country, optional_data) do
+    if is_list(optional_data.address_lines) do
+      structured_values =
+        [
+          town_name,
+          country,
+          optional_data.department,
+          optional_data.sub_department,
+          optional_data.street_name,
+          optional_data.building_number,
+          optional_data.building_name,
+          optional_data.floor,
+          optional_data.post_box,
+          optional_data.room,
+          optional_data.post_code,
+          optional_data.town_location_name,
+          optional_data.district_name,
+          optional_data.country_sub_division
+        ]
+        |> Enum.reject(&is_nil/1)
+
+      case find_hybrid_duplicate(optional_data.address_lines, structured_values) do
+        nil ->
+          :ok
+
+        duplicate ->
+          {:error, "address_lines: must not repeat structured address element '#{duplicate}'"}
+      end
+    else
+      :ok
+    end
+  end
+
+  defp find_hybrid_duplicate(address_lines, structured_values) do
+    comparable_values = MapSet.new(Enum.map(structured_values, &comparable_text/1))
+
+    Enum.find_value(address_lines, fn line ->
+      if MapSet.member?(comparable_values, comparable_text(line)), do: line, else: nil
+    end)
+  end
+
+  defp comparable_text(text) do
+    text
+    |> String.downcase()
+    |> String.replace(~r/\s+/, " ")
+    |> String.trim()
+  end
+
+  @doc """
+  Extracts and validates an optional debtor or creditor address from a map
+  using the default SCT validation rules.
+  """
   @spec get_address(
           map(),
           :debtor_address | :creditor_address
