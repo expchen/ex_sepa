@@ -18,10 +18,12 @@ defmodule ExSepa.MixProject do
       source_url: "https://github.com/Lehrstuhl-BWL-EvIS/ex_sepa",
       homepage_url: "https://github.com/Lehrstuhl-BWL-EvIS/ex_sepa",
       docs: [
-        # The main page in the docs
-        # main: "ExSepa",
-        # logo: "path/to/logo.png",
-        extras: ["README.md", "LICENSE"]
+        main: "ExSepa",
+        extras: [
+          "README.md",
+          "docs/file_structure.md",
+          "LICENSE"
+        ]
       ]
     ]
   end
