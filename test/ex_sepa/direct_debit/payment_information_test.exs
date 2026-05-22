@@ -14,7 +14,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              }) ==
@@ -22,7 +22,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 %ExSepa.DirectDebit.PaymentInformation{
                   payment_id: payment_id,
                   due_date: date,
-                  creditor_id: "CIDZZZ00000001",
+                  creditor_id: "DE98ZZZ09999999999",
                   creditor_name: creditor_name,
                   creditor_iban: creditor_iban
                 }}
@@ -37,7 +37,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                creditor_bic: "BANKDEFFXXX"
@@ -46,10 +46,56 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 %ExSepa.DirectDebit.PaymentInformation{
                   payment_id: payment_id,
                   due_date: date,
-                  creditor_id: "CIDZZZ00000001",
+                  creditor_id: "DE98ZZZ09999999999",
                   creditor_name: creditor_name,
                   creditor_iban: creditor_iban,
                   creditor_bic: "BANKDEFFXXX"
+                }}
+    end
+
+    test "accepts a valid non-EEA creditor_id" do
+      payment_id = example_payment_id()
+      date = Date.utc_today() |> Date.add(3)
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.DirectDebit.PaymentInformation.new(%{
+               payment_id: payment_id,
+               due_date: date,
+               creditor_id: "CH10ZZZ00099999999",
+               creditor_name: creditor_name,
+               creditor_iban: creditor_iban
+             }) ==
+               {:ok,
+                %ExSepa.DirectDebit.PaymentInformation{
+                  payment_id: payment_id,
+                  due_date: date,
+                  creditor_id: "CH10ZZZ00099999999",
+                  creditor_name: creditor_name,
+                  creditor_iban: creditor_iban
+                }}
+    end
+
+    test "accepts lowercase creditor_id because the EPC format is case insensitive" do
+      payment_id = example_payment_id()
+      date = Date.utc_today() |> Date.add(3)
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.DirectDebit.PaymentInformation.new(%{
+               payment_id: payment_id,
+               due_date: date,
+               creditor_id: "de98zzz09999999999",
+               creditor_name: creditor_name,
+               creditor_iban: creditor_iban
+             }) ==
+               {:ok,
+                %ExSepa.DirectDebit.PaymentInformation{
+                  payment_id: payment_id,
+                  due_date: date,
+                  creditor_id: "de98zzz09999999999",
+                  creditor_name: creditor_name,
+                  creditor_iban: creditor_iban
                 }}
     end
 
@@ -62,7 +108,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              }) ==
@@ -70,7 +116,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 %ExSepa.DirectDebit.PaymentInformation{
                   payment_id: payment_id,
                   due_date: date,
-                  creditor_id: "CIDZZZ00000001",
+                  creditor_id: "DE98ZZZ09999999999",
                   creditor_name: normalize_text(creditor_name),
                   creditor_iban: creditor_iban
                 }}
@@ -85,7 +131,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                creditor_bic: "BANKDEFFXXX",
@@ -95,7 +141,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 %ExSepa.DirectDebit.PaymentInformation{
                   payment_id: payment_id,
                   due_date: date,
-                  creditor_id: "CIDZZZ00000001",
+                  creditor_id: "DE98ZZZ09999999999",
                   creditor_name: creditor_name,
                   creditor_iban: creditor_iban,
                   creditor_bic: "BANKDEFFXXX",
@@ -118,7 +164,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                creditor_address: %{town_name: city, country: country}
@@ -127,7 +173,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 %ExSepa.DirectDebit.PaymentInformation{
                   payment_id: payment_id,
                   due_date: date,
-                  creditor_id: "CIDZZZ00000001",
+                  creditor_id: "DE98ZZZ09999999999",
                   creditor_name: creditor_name,
                   creditor_iban: creditor_iban,
                   creditor_address: %ExSepa.Schema.Address{town_name: city, country: country}
@@ -151,7 +197,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                creditor_address: %{
@@ -164,7 +210,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                 %ExSepa.DirectDebit.PaymentInformation{
                   payment_id: payment_id,
                   due_date: date,
-                  creditor_id: "CIDZZZ00000001",
+                  creditor_id: "DE98ZZZ09999999999",
                   creditor_name: creditor_name,
                   creditor_iban: creditor_iban,
                   creditor_address: %ExSepa.Schema.Address{
@@ -184,7 +230,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                creditor_address: "Berlin"
@@ -200,7 +246,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              }) == {:error, "payment_id: Maximum length of 35 characters"}
@@ -214,7 +260,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: 00_000_001,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              }) ==
@@ -230,7 +276,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              }) == {:error, "The due date must be in the future."}
@@ -245,7 +291,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              }) == {:error, "Parameter due_date must be a date"}
@@ -265,6 +311,36 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              }) == {:error, "creditor_id: Maximum length of 35 characters"}
+    end
+
+    test "fail: creditor_id invalid checksum" do
+      payment_id = example_payment_id()
+      date = Date.utc_today() |> Date.add(3)
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.DirectDebit.PaymentInformation.new(%{
+               payment_id: payment_id,
+               due_date: date,
+               creditor_id: "DE00ZZZ09999999999",
+               creditor_name: creditor_name,
+               creditor_iban: creditor_iban
+             }) == {:error, "creditor_id: invalid creditor identifier check digits"}
+    end
+
+    test "fail: creditor_id business code cannot contain spaces" do
+      payment_id = example_payment_id()
+      date = Date.utc_today() |> Date.add(3)
+      creditor_name = example_organisation_name()
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.DirectDebit.PaymentInformation.new(%{
+               payment_id: payment_id,
+               due_date: date,
+               creditor_id: "DE98Z Z09999999999",
+               creditor_name: creditor_name,
+               creditor_iban: creditor_iban
+             }) == {:error, "creditor_id: invalid creditor identifier structure"}
     end
 
     test "fail: creditor_id wrong type" do
@@ -297,7 +373,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              }) == {:error, "creditor_name: Maximum length of 70 characters"}
@@ -312,7 +388,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              }) ==
@@ -332,7 +408,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
                ExSepa.DirectDebit.PaymentInformation.new(%{
                  payment_id: payment_id,
                  due_date: date,
-                 creditor_id: "CIDZZZ00000001",
+                 creditor_id: "DE98ZZZ09999999999",
                  creditor_name: creditor_name,
                  creditor_iban: creditor_iban
                })
@@ -347,7 +423,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: 123_456_789
              }) ==
@@ -364,7 +440,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                creditor_bic: "Foo"
@@ -381,7 +457,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                creditor_bic: 123
@@ -399,7 +475,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                sequence_type: :Foo
@@ -417,7 +493,7 @@ defmodule ExSepa.DirectDebit.PaymentInformationTest do
       assert ExSepa.DirectDebit.PaymentInformation.new(%{
                payment_id: payment_id,
                due_date: date,
-               creditor_id: "CIDZZZ00000001",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                sequence_type: "Foo"

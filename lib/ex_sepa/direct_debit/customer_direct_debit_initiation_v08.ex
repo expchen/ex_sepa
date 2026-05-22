@@ -239,9 +239,11 @@ defmodule ExSepa.DirectDebit.CustomerDirectDebitInitiationV08 do
           element(:IBAN, nil, transaction_information.debtor_iban)
         ])
       ]),
-      element(:RmtInf, nil, [
-        element(:Ustrd, nil, transaction_information.remittance_information)
-      ])
+      if transaction_information.remittance_information |> String.trim() != "" do
+        element(:RmtInf, nil, [
+          element(:Ustrd, nil, transaction_information.remittance_information)
+        ])
+      end
     ])
   end
 

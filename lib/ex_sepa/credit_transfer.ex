@@ -107,8 +107,8 @@ defmodule ExSepa.CreditTransfer do
     * `:debtor_name` - The Name of the Debtor, also called the Originator in the SEPA Credit Transfer Scheme (maximum length of 70 characters).
     * `:debtor_iban` - The account number (IBAN) of the Debtor.
     * `:debtor_bic` - OPTIONAL: BIC code of the Debtor PSP. If not provided, `NOTPROVIDED` is used in the Debtor Agent structure. BIC is mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory.
-    * `:debtor_address` - OPTIONAL: Structured or hybrid address of the Debtor. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. Address is mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory. More details in `ExSepa.Address`.
-    * `:transaction_information` - OPTIONAL: A prebuilt list of `ExSepa.CreditTransfer.TransactionInformation` structs. This can be used as an alternative to calling `add_transaction_information/3` repeatedly.
+    * `:debtor_address` - OPTIONAL: Structured or hybrid address of the Debtor. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. Address is mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory. More details in `ExSepa.Schema.Address`.
+    * `:transaction_information` - OPTIONAL: A prebuilt list of transaction structs. This can be used as an alternative to calling `add_transaction_information/3` repeatedly.
   """
   @spec add_payment_information(ExSepa.CreditTransfer.t(), %{
           :debtor_iban => String.t(),
@@ -140,7 +140,7 @@ defmodule ExSepa.CreditTransfer do
     * `:creditor_name` - The Name of the Creditor, also called the Beneficiary in the SEPA Credit Transfer Scheme (maximum length of 70 characters).
     * `:creditor_iban` - The account number (IBAN) of the Creditor.
     * `:creditor_bic` - OPTIONAL: BIC code of the Creditor PSP. If not provided, the Creditor Agent structure is omitted. BIC is mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory.
-    * `:creditor_address` - OPTIONAL: Structured or hybrid address of the Creditor. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. Address is mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. More details in `ExSepa.Address`.
+    * `:creditor_address` - OPTIONAL: Structured or hybrid address of the Creditor. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. Address is mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. More details in `ExSepa.Schema.Address`.
     * `:remittance_information` - OPTIONAL: The Remittance Information sent by the Originator to the Beneficiary in the Credit Transfer Instruction (maximum length of 140 characters).
   """
   @spec add_transaction_information(

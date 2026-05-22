@@ -320,6 +320,61 @@ defmodule ExSepa.CreditTransferInstant.TransactionInformationTest do
                {:error, "creditor_name: Maximum length of 70 characters"}
     end
 
+    test "fail: creditor_name must not begin with /" do
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.CreditTransferInstant.TransactionInformation.new(%{
+               end_to_end_id: endtoendid,
+               amount: amount,
+               creditor_name: "/Creditor Name",
+               creditor_iban: creditor_iban
+             }) == {:error, "creditor_name: Text field must not begin with '/'"}
+    end
+
+    test "fail: creditor_name must not end with /" do
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.CreditTransferInstant.TransactionInformation.new(%{
+               end_to_end_id: endtoendid,
+               amount: amount,
+               creditor_name: "Creditor Name/",
+               creditor_iban: creditor_iban
+             }) == {:error, "creditor_name: Text field must not end with '/'"}
+    end
+
+    test "fail: creditor_name must not contain //" do
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.CreditTransferInstant.TransactionInformation.new(%{
+               end_to_end_id: endtoendid,
+               amount: amount,
+               creditor_name: "Creditor // Name",
+               creditor_iban: creditor_iban
+             }) == {:error, "creditor_name: Text field must not contain '//'"}
+    end
+
+    test "fail: creditor_iban invalid" do
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      creditor_name = example_person_name()
+
+      assert match?(
+               {:error, _},
+               ExSepa.CreditTransferInstant.TransactionInformation.new(%{
+                 end_to_end_id: endtoendid,
+                 amount: amount,
+                 creditor_name: creditor_name,
+                 creditor_iban: "XX00INVALIDIBAN"
+               })
+             )
+    end
+
     test "fail: creditor_iban wrong type" do
       endtoendid = example_end_to_end_id()
       amount = example_amount()
@@ -383,6 +438,21 @@ defmodule ExSepa.CreditTransferInstant.TransactionInformationTest do
              }) ==
                {:error,
                 "Parameters must be strings. - remittance_information: must be UTF-8 encoded binary"}
+    end
+
+    test "fail: remittance_information too long" do
+      endtoendid = example_end_to_end_id()
+      amount = example_amount()
+      creditor_name = example_person_name()
+      creditor_iban = example_eea_iban()
+
+      assert ExSepa.CreditTransferInstant.TransactionInformation.new(%{
+               end_to_end_id: endtoendid,
+               amount: amount,
+               creditor_name: creditor_name,
+               creditor_iban: creditor_iban,
+               remittance_information: Faker.Util.format("%141a")
+             }) == {:error, "remittance_information: Maximum length of 140 characters"}
     end
 
     test "error: missing key :creditor_iban" do

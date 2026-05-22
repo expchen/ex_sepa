@@ -669,6 +669,53 @@ defmodule ExSepa.CreditTransferTest do
       validate_against_gbic_5_pain_001(xml)
     end
 
+    test "Generate XML with multiple payment information groups and transactions" do
+      xml =
+        ExSepa.CreditTransfer.new(%{
+          msg_id: "Msg-ID-003A",
+          initiating_party_name: "Initiating Party"
+        })
+        |> ExSepa.CreditTransfer.add_payment_information(%{
+          payment_id: "Payment-ID-0003A",
+          requested_execution_date: Date.utc_today(),
+          debtor_name: "Debtor One",
+          debtor_iban: "DE87200500001234567890"
+        })
+        |> ExSepa.CreditTransfer.add_transaction_information("Payment-ID-0003A", %{
+          end_to_end_id: "EndToEndId-0003A-1",
+          amount: 100.01,
+          creditor_name: "Creditor One",
+          creditor_iban: "DE88100900001234567892"
+        })
+        |> ExSepa.CreditTransfer.add_payment_information(%{
+          payment_id: "Payment-ID-0003B",
+          requested_execution_date: Date.utc_today() |> Date.add(1),
+          debtor_name: "Debtor Two",
+          debtor_iban: "DE12500105170648489890"
+        })
+        |> ExSepa.CreditTransfer.add_transaction_information("Payment-ID-0003B", %{
+          end_to_end_id: "EndToEndId-0003B-1",
+          amount: 200.02,
+          creditor_name: "Creditor Two",
+          creditor_iban: "NL62PXVC6402395035"
+        })
+        |> ExSepa.CreditTransfer.add_transaction_information("Payment-ID-0003B", %{
+          end_to_end_id: "EndToEndId-0003B-2",
+          amount: 50.03,
+          creditor_name: "Creditor Three",
+          creditor_iban: "FR7630006000011234567890189"
+        })
+        |> ExSepa.CreditTransfer.to_xml()
+
+      assert length(Regex.scan(~r/<PmtInf>/, xml)) == 2
+      assert length(Regex.scan(~r/<CdtTrfTxInf>/, xml)) == 3
+      assert xml =~ "<NbOfTxs>3</NbOfTxs>"
+      assert xml =~ "<CtrlSum>350.06</CtrlSum>"
+      assert xml =~ "<PmtInfId>Payment-ID-0003A</PmtInfId>"
+      assert xml =~ "<PmtInfId>Payment-ID-0003B</PmtInfId>"
+      validate_against_gbic_5_pain_001(xml)
+    end
+
     test "Generate XML with non-EEA structured addresses" do
       xml =
         ExSepa.CreditTransfer.new(%{

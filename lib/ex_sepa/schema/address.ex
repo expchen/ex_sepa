@@ -5,32 +5,47 @@ defmodule ExSepa.Schema.Address do
   @required_fields [:town_name, :country]
 
   @moduledoc """
-  Postal Address: only structured and hybrid addresses are supported.
-  Unstructured addresses are not supported.
+  Public address model for debtor and creditor postal addresses.
+
+  This schema is used for structured and hybrid postal addresses in SEPA
+  messages.
+
+  ExSepa does not support unstructured addresses.
+
+  ## Required Fields
+
+    * `:town_name` - town or city name
+    * `:country` - two-letter ISO country code
+
+  ## Notes
+
+    * `:address_lines` may contain 1 or 2 lines for a hybrid address
+    * hybrid lines must not repeat structured address content
+    * some EPC flows require a payer or debtor address when a PSP is in a
+      non-EEA SEPA country or territory
   """
 
   @typedoc """
-  Address information are only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory.
-  At least `:town_name` and `:country` must be used.
-  Hybrid addresses may additionally use up to two `:address_lines`.
-  Unstructured addresses are not supported.
+  Postal address fields accepted by `t:ExSepa.Schema.Address.t/0`.
 
-  The map has the following keys:
-    * `:town_name` Name of a built-up area, with defined boundaries, and a local government (maximum length of 35 characters).
-    * `:country` Nation with its own government (CountryCode - Pattern: [A-Z]{2,2}).
-    * `:department` OPTIONAL: Identification of a division of a large organisation or building (maximum length of 70 characters).
-    * `:sub_department` OPTIONAL: Identification of a subdivision of a large organisation or building (maximum length of 70 characters).
-    * `:street_name` OPTIONAL: Name of a street or thoroughfare (maximum length of 70 characters).
-    * `:building_number` OPTIONAL: Number that identifies the position of a building on a street (maximum length of 16 characters).
-    * `:building_name` OPTIONAL: Name of the building or house (maximum length of 35 characters).
-    * `:floor` OPTIONAL: Floor or storey within a building (maximum length of 70 characters).
-    * `:post_box` OPTIONAL: Numbered box in a post office, assigned to a person or organisation, where letters are kept until called for (maximum length of 16 characters).
-    * `:room` OPTIONAL: Building room number (maximum length of 70 characters).
-    * `:post_code` OPTIONAL: Identifier consisting of a group of letters and/or numbers that is added to a postal address to assist the sorting of mail (maximum length of 16 characters).
-    * `:town_location_name` OPTIONAL: Specific location name within the town (maximum length of 35 characters).
-    * `:district_name` OPTIONAL: Identifies a subdivision within a country subdivision (maximum length of 35 characters).
-    * `:country_sub_division` OPTIONAL: Identifies a subdivision of a country such as state, region, county (maximum length of 35 characters).
-    * `:address_lines` OPTIONAL: Up to two address lines for a hybrid address (maximum length of 70 characters per line).
+  At least `:town_name` and `:country` must be used. Hybrid addresses may
+  additionally use up to two `:address_lines`.
+
+    * `:town_name` - town or city name, max 35 characters
+    * `:country` - two-letter country code matching `[A-Z]{2}`
+    * `:department` - optional department, max 70 characters
+    * `:sub_department` - optional sub-department, max 70 characters
+    * `:street_name` - optional street name, max 70 characters
+    * `:building_number` - optional building number, max 16 characters
+    * `:building_name` - optional building name, max 35 characters
+    * `:floor` - optional floor or storey, max 70 characters
+    * `:post_box` - optional post office box, max 16 characters
+    * `:room` - optional room identifier, max 70 characters
+    * `:post_code` - optional postal code, max 16 characters
+    * `:town_location_name` - optional town location name, max 35 characters
+    * `:district_name` - optional district name, max 35 characters
+    * `:country_sub_division` - optional state, region, or county, max 35 characters
+    * `:address_lines` - optional hybrid address lines, 1 to 2 entries, max 70 characters each
   """
   @type t :: %__MODULE__{
           department: String.t() | nil,
@@ -68,7 +83,66 @@ defmodule ExSepa.Schema.Address do
   ]
 
   @doc """
-  Builds an address using the default SCT validation rules.
+  Validates input and builds a structured or hybrid address struct.
+
+  Required keys are `:town_name` and `:country`.
+
+  If `:address_lines` is present, the address is treated as a hybrid address and
+  must contain 1 or 2 lines. Each value is validated against the EPC text
+  rules, and `:country` must be a valid two-letter country code.
+
+  Hybrid lines must not repeat any structured address element. Unstructured
+  addresses are rejected.
+
+  ## Examples
+
+      iex> ExSepa.Schema.Address.new(%{
+      ...>   town_name: "Berlin",
+      ...>   country: "DE",
+      ...>   street_name: "Unter den Linden"
+      ...> })
+      {:ok,
+       %ExSepa.Schema.Address{
+         department: nil,
+         sub_department: nil,
+         street_name: "Unter den Linden",
+         building_number: nil,
+         building_name: nil,
+         floor: nil,
+         post_box: nil,
+         room: nil,
+         post_code: nil,
+         town_name: "Berlin",
+         town_location_name: nil,
+         district_name: nil,
+         country_sub_division: nil,
+         country: "DE",
+         address_lines: nil
+       }}
+
+      iex> ExSepa.Schema.Address.new(%{
+      ...>   town_name: "Andorra la Vella",
+      ...>   country: "AD",
+      ...>   address_lines: ["Carrer de la Vall 1", "Edifici Central"]
+      ...> })
+      {:ok,
+       %ExSepa.Schema.Address{
+         department: nil,
+         sub_department: nil,
+         street_name: nil,
+         building_number: nil,
+         building_name: nil,
+         floor: nil,
+         post_box: nil,
+         room: nil,
+         post_code: nil,
+         town_name: "Andorra la Vella",
+         town_location_name: nil,
+         district_name: nil,
+         country_sub_division: nil,
+         country: "AD",
+         address_lines: ["Carrer de la Vall 1", "Edifici Central"]
+       }}
   """
   @spec new(map()) :: {:error, String.t()} | {:ok, __MODULE__.t()}
   def new(address_map) when is_map(address_map) do
@@ -297,6 +371,8 @@ defmodule ExSepa.Schema.Address do
   @doc """
   Extracts and validates an optional debtor or creditor address from a map
   using the default SCT validation rules.
+
+  Returns `{:ok, nil}` when the address key is not present.
   """
   @spec get_address(
           map(),

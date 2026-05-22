@@ -301,7 +301,30 @@ defmodule ExSepa.Validation.Field do
   end
 
   @doc """
-  Checks whether the transmitted country code corresponds to one of the EEA countries and, if applicable, whether an address has been specified.
+  Validates a SEPA creditor identifier (AT-E005).
+  """
+  @spec creditor_identifier(String.t()) :: {:ok, String.t()} | {:error, String.t()}
+  def creditor_identifier(creditor_identifier) do
+    with :ok <- real_text(creditor_identifier),
+         trimmed_creditor_identifier = String.trim(creditor_identifier),
+         :ok <- min_max_text(trimmed_creditor_identifier, 8, 35),
+         {:ok, validated_creditor_identifier} <-
+           in_language(
+             trimmed_creditor_identifier,
+             ~r/[a-zA-Z0-9|\x2F|\x2D|\x3F|\x3A|\x28|\x29|\x2E|\x20|\x2C|\x27|\x2B]{1,35}/
+           ),
+         :ok <- validate_slash_rules(validated_creditor_identifier),
+         :ok <- validate_creditor_identifier_structure(validated_creditor_identifier) do
+      {:ok, validated_creditor_identifier}
+    else
+      {:error, error} -> {:error, "creditor_id: #{error}"}
+    end
+  end
+
+  @doc """
+  Checks whether the transmitted country code corresponds to one of the EEA
+  countries and, if applicable, whether the required BIC and address have been
+  specified.
 
   ## Examples
 
@@ -345,5 +368,80 @@ defmodule ExSepa.Validation.Field do
         end
       end
     end
+  end
+
+  defp validate_creditor_identifier_structure(creditor_identifier) do
+    uppercase_creditor_identifier = String.upcase(creditor_identifier)
+    country = String.slice(uppercase_creditor_identifier, 0, 2)
+    check_digits = String.slice(uppercase_creditor_identifier, 2, 2)
+    business_code = String.slice(uppercase_creditor_identifier, 4, 3)
+    national_identifier = String.slice(uppercase_creditor_identifier, 7..-1//1)
+
+    with :ok <- country_code(country),
+         :ok <- do_pattern_test(check_digits, ~r/[0-9]{2}/),
+         :ok <- do_pattern_test(business_code, ~r/[A-Z0-9]{3}/),
+         :ok <- validate_creditor_identifier_national_part(national_identifier),
+         true <- creditor_identifier_check_digits_valid?(uppercase_creditor_identifier) do
+      :ok
+    else
+      false ->
+        {:error, "invalid creditor identifier check digits"}
+
+      {:error, "Country code not in list!"} ->
+        {:error, "invalid country code"}
+
+      {:error, "These characters are not part of the pattern test: " <> _rest} ->
+        {:error, "invalid creditor identifier structure"}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  defp validate_creditor_identifier_national_part(nil),
+    do: {:error, "creditor identifier must include a country-specific identifier"}
+
+  defp validate_creditor_identifier_national_part(national_identifier) do
+    if national_identifier
+       |> String.replace(~r/[^A-Za-z0-9]/, "")
+       |> String.length() > 0 do
+      :ok
+    else
+      {:error, "creditor identifier must include a country-specific identifier"}
+    end
+  end
+
+  defp creditor_identifier_check_digits_valid?(creditor_identifier) do
+    expected_check_digits =
+      creditor_identifier
+      |> creditor_identifier_checksum_payload()
+      |> mod97()
+      |> then(&(98 - &1))
+      |> Integer.to_string()
+      |> String.pad_leading(2, "0")
+
+    String.slice(creditor_identifier, 2, 2) == expected_check_digits
+  end
+
+  defp creditor_identifier_checksum_payload(creditor_identifier) do
+    country = String.slice(creditor_identifier, 0, 2)
+
+    creditor_identifier
+    |> String.slice(7..-1//1)
+    |> String.replace(~r/[^A-Za-z0-9]/, "")
+    |> Kernel.<>(country <> "00")
+    |> String.to_charlist()
+    |> Enum.map_join(fn
+      char when char in ?A..?Z -> Integer.to_string(char - 55)
+      char -> <<char>>
+    end)
+  end
+
+  defp mod97(number_string) do
+    number_string
+    |> String.to_charlist()
+    |> Enum.reduce(0, fn char, remainder ->
+      rem(remainder * 10 + (char - ?0), 97)
+    end)
   end
 end

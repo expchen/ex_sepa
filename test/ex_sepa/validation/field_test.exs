@@ -53,4 +53,22 @@ defmodule ExSepa.Validation.FieldTest do
       assert ExSepa.Validation.Field.country_code("US") == {:error, "Country code not in list!"}
     end
   end
+
+  describe "ExSepa.Validation.Field.creditor_identifier/1" do
+    test "accepts a valid EPC creditor identifier" do
+      assert ExSepa.Validation.Field.creditor_identifier("DE98ZZZ09999999999") ==
+               {:ok, "DE98ZZZ09999999999"}
+    end
+
+    test "accepts a valid non-EEA EPC creditor identifier" do
+      assert ExSepa.Validation.Field.creditor_identifier("CH10ZZZ00099999999") ==
+               {:ok, "CH10ZZZ00099999999"}
+    end
+
+    test "rejects invalid creditor identifier check digits" do
+      assert ExSepa.Validation.Field.creditor_identifier("DE00ZZZ09999999999") ==
+               {:error, "creditor_id: invalid creditor identifier check digits"}
+    end
+  end
+
 end

@@ -4,10 +4,22 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
 
   @instruction_priorities %{High: "HIGH", Normal: "NORM"}
 
-  @moduledoc false
-  # """
-  # Payment Information: Set of characteristics that apply to the debit side of the payment transactions included in the credit transfer transaction initiation.
-  # """
+  @moduledoc """
+  Public payment information model for SEPA credit transfer batches.
+
+  Each payment information block groups transactions that share the same debtor
+  and requested execution date.
+
+  ## Required Fields
+
+    * `:payment_id` - unique identifier for the payment information block
+    * `:requested_execution_date` - execution date for the batch
+    * `:debtor_name` - debtor/originator name
+    * `:debtor_iban` - debtor/originator IBAN
+
+  Optional debtor BIC, debtor address, and prebuilt transaction information
+  entries may also be provided.
+  """
 
   @enforce_keys [:payment_id, :requested_execution_date, :debtor_name, :debtor_iban]
   @typedoc false
@@ -31,19 +43,35 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
     transaction_information: []
   ]
 
-  @doc false
-  # """
-  # Add Payment Information: Set of characteristics that apply to the debit side of the payment transactions included in the credit transfer transaction initiation.
+  @doc """
+  Validates input and builds a credit transfer payment information struct.
 
-  # The map has the following keys:
+  Required keys are `:payment_id`, `:requested_execution_date`, `:debtor_name`,
+  and `:debtor_iban`.
 
-  #   * `:payment_id` - Unique identification, as assigned by a sending party, to unambiguously identify the payment information group within the message (maximum length of 35 characters).
-  #   * `:requested_execution_date` - The Requested Execution Date of the Credit Transfer instruction (ISODate). The date must be today or a future date.
-  #   * `:debtor_name` - The Name of the Debtor / Originator (maximum length of 70 characters).
-  #   * `:debtor_iban` - The account number (IBAN) of the Debtor / Originator.
-  #   * `:debtor_bic` - OPTIONAL: BIC code of the Debtor PSP. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory.
-  #   * `:debtor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
-  # """
+  The requested execution date must be today or later. Optional
+  `:debtor_bic`, `:debtor_address`, and prebuilt `:transaction_information`
+  entries may also be provided.
+
+  ## Example
+
+      iex> ExSepa.CreditTransfer.PaymentInformation.new(%{
+      ...>   payment_id: "Payment-ID-0001",
+      ...>   requested_execution_date: Date.utc_today(),
+      ...>   debtor_name: "Example GmbH",
+      ...>   debtor_iban: "DE87200500001234567890"
+      ...> })
+      {:ok,
+       %ExSepa.CreditTransfer.PaymentInformation{
+         payment_id: "Payment-ID-0001",
+         requested_execution_date: Date.utc_today(),
+         debtor_name: "Example GmbH",
+         debtor_address: nil,
+         debtor_iban: "DE87200500001234567890",
+         debtor_bic: "",
+         transaction_information: []
+       }}
+  """
   @spec new(%{
           :payment_id => String.t(),
           :requested_execution_date => Date.t(),
@@ -153,7 +181,8 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
   @doc false
   def get_optional_data(scheme, payment_information) do
     with {:ok, debtor_bic} <- get_debtor_bic(payment_information),
-         {:ok, transaction_information} <- get_transaction_information(payment_information),
+         {:ok, transaction_information} <-
+           get_transaction_information(scheme, payment_information),
          {:ok, debtor_address} <-
            ExSepa.Schema.Address.get_address(payment_information, :debtor_address),
          {:ok, instruction_priority} <- get_instruction_priority(scheme, payment_information),
@@ -189,15 +218,44 @@ defmodule ExSepa.CreditTransfer.PaymentInformation do
     end
   end
 
-  defp get_transaction_information(payment_information) do
+  defp get_transaction_information(scheme, payment_information) do
     case Map.fetch(payment_information, :transaction_information) do
       {:ok, transaction_information} when is_list(transaction_information) ->
-        {:ok, transaction_information}
+        validate_transaction_information_list(scheme, transaction_information)
 
       :error ->
         {:ok, []}
+
+      {:ok, _transaction_information} ->
+        {:error, "transaction_information: must be a list"}
     end
   end
+
+  defp validate_transaction_information_list(_scheme, []), do: {:ok, []}
+
+  defp validate_transaction_information_list(scheme, transaction_information) do
+    expected_module = transaction_information_module(scheme)
+
+    Enum.reduce_while(
+      Enum.with_index(transaction_information),
+      {:ok, transaction_information},
+      fn {entry, index}, _acc ->
+        if match?(%{__struct__: ^expected_module}, entry) do
+          {:cont, {:ok, transaction_information}}
+        else
+          {:halt,
+           {:error,
+            "transaction_information[#{index}]: must be a #{inspect(expected_module)} struct"}}
+        end
+      end
+    )
+  end
+
+  defp transaction_information_module(:sct),
+    do: ExSepa.CreditTransfer.TransactionInformation
+
+  defp transaction_information_module(:sct_inst),
+    do: ExSepa.CreditTransferInstant.TransactionInformation
 
   defp get_instruction_priority(scheme, payment_information) do
     if Scheme.instruction_priority_allowed?(scheme) do

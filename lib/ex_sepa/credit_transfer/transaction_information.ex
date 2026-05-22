@@ -1,10 +1,21 @@
 defmodule ExSepa.CreditTransfer.TransactionInformation do
   alias ExSepa.Validation.Field, as: FieldValidation
 
-  @moduledoc false
-  # """
-  # Credit Transfer Transaction Information: Provides information on the individual transaction(s) included in the message.
-  # """
+  @moduledoc """
+  Public transaction model for a single SEPA credit transfer.
+
+  Each entry describes one creditor payment within a credit transfer batch.
+
+  ## Required Fields
+
+    * `:end_to_end_id` - originator reference for the transaction
+    * `:amount` - amount in euro
+    * `:creditor_name` - creditor/beneficiary name
+    * `:creditor_iban` - creditor/beneficiary IBAN
+
+  Optional creditor BIC, creditor address, and remittance information may also
+  be provided.
+  """
 
   @enforce_keys [:end_to_end_id, :amount, :creditor_name, :creditor_iban]
   @typedoc false
@@ -28,20 +39,35 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
     remittance_information: ""
   ]
 
-  @doc false
-  # """
-  # Add Transaction Information: Provides information on the individual transaction included in the message.
+  @doc """
+  Validates input and builds a credit transfer transaction struct.
 
-  # The map has the following keys:
+  Required keys are `:end_to_end_id`, `:amount`, `:creditor_name`, and
+  `:creditor_iban`.
 
-  #   * `:end_to_end_id` - The Originator's Reference of the Credit Transfer Instruction (maximum length of 35 characters).
-  #   * `:amount` - The Amount of the Credit Transfer in euro.
-  #   * `:creditor_name` - The Name of the Creditor / Beneficiary (maximum length of 70 characters).
-  #   * `:creditor_iban` - The account number (IBAN) of the Creditor / Beneficiary.
-  #   * `:creditor_bic` - OPTIONAL: BIC code of the Creditor PSP. Only mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. If empty, `CdtrAgt` is not used in the generated XML.
-  #   * `:creditor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Creditor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
-  #   * `:remittance_information` - OPTIONAL: The Remittance Information sent by the Originator to the Beneficiary (maximum length of 140 characters). If empty, `RmtInf` is not used in the generated XML.
-  # """
+  The amount must be a positive euro value with up to two decimal places.
+  Optional `:creditor_bic`, `:creditor_address`, and
+  `:remittance_information` may also be provided.
+
+  ## Example
+
+      iex> ExSepa.CreditTransfer.TransactionInformation.new(%{
+      ...>   end_to_end_id: "E2E-0001",
+      ...>   amount: 125.50,
+      ...>   creditor_name: "Example Supplier",
+      ...>   creditor_iban: "NL62PXVC6402395035"
+      ...> })
+      {:ok,
+       %ExSepa.CreditTransfer.TransactionInformation{
+         end_to_end_id: "E2E-0001",
+         amount: 125.5,
+         creditor_name: "Example Supplier",
+         creditor_address: nil,
+         creditor_iban: "NL62PXVC6402395035",
+         creditor_bic: "",
+         remittance_information: ""
+       }}
+  """
   @spec new(%{
           :end_to_end_id => String.t(),
           :amount => float(),

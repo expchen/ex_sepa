@@ -5,8 +5,8 @@ defmodule ExSepa.DirectDebitTest do
   import ExSepa.TestSupport.XmlHelpers
   doctest ExSepa.DirectDebit
 
-  @creditor_id "DE00ZZZ00099999999"
-  @non_eea_creditor_id "CIDZZZ00000001"
+  @creditor_id "DE98ZZZ09999999999"
+  @non_eea_creditor_id "CH10ZZZ00099999999"
   @creditor_bic "BANKDEFFXXX"
   @end_to_end_id "EndToEndId-0001"
   @mandate_id "Mandate-Id-01"
@@ -336,6 +336,39 @@ defmodule ExSepa.DirectDebitTest do
              }
     end
 
+    test "accepts a valid non-EEA creditor identifier" do
+      direct_debit =
+        ExSepa.DirectDebit.new(%{
+          msg_id: "Msg-ID-001-CH",
+          initiating_party_name: "Initiating Party"
+        })
+
+      assert ExSepa.DirectDebit.add_payment_information(
+               direct_debit,
+               %{
+                 payment_id: "Pmt-ID-001-CH",
+                 due_date: Date.utc_today() |> Date.add(3),
+                 creditor_id: @non_eea_creditor_id,
+                 creditor_name: "Creditor Name",
+                 creditor_iban: "DE87200500001234567890"
+               }
+             ) == %ExSepa.DirectDebit{
+               group_header: %ExSepa.Schema.GroupHeader{
+                 msg_id: "Msg-ID-001-CH",
+                 initiating_party_name: "Initiating Party"
+               },
+               payment_information: [
+                 %ExSepa.DirectDebit.PaymentInformation{
+                   payment_id: "Pmt-ID-001-CH",
+                   due_date: Date.utc_today() |> Date.add(3),
+                   creditor_id: @non_eea_creditor_id,
+                   creditor_name: "Creditor Name",
+                   creditor_iban: "DE87200500001234567890"
+                 }
+               ]
+             }
+    end
+
     test "error: BIC is mandatory" do
       date = Date.utc_today() |> Date.add(3)
 
@@ -351,7 +384,7 @@ defmodule ExSepa.DirectDebitTest do
           %{
             payment_id: "Pmt-ID-001",
             due_date: date,
-            creditor_id: "DE00ZZZ00099999999",
+            creditor_id: "DE98ZZZ09999999999",
             creditor_name: "Creditor Name",
             creditor_iban: "DE87200500001234567890"
           }
@@ -390,7 +423,7 @@ defmodule ExSepa.DirectDebitTest do
              |> ExSepa.DirectDebit.add_payment_information(%{
                payment_id: "Pmt-ID-001",
                due_date: date,
-               creditor_id: "DE00ZZZ00099999999",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: "Creditor Name",
                creditor_iban: "DE87200500001234567890",
                creditor_bic: "BANKDEFFXXX"
@@ -417,7 +450,7 @@ defmodule ExSepa.DirectDebitTest do
                  %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-001",
                    due_date: date,
-                   creditor_id: "DE00ZZZ00099999999",
+                   creditor_id: "DE98ZZZ09999999999",
                    creditor_name: "Creditor Name",
                    creditor_iban: "DE87200500001234567890",
                    creditor_bic: "BANKDEFFXXX",
@@ -470,7 +503,7 @@ defmodule ExSepa.DirectDebitTest do
           %{
             payment_id: "Pmt-ID-001",
             due_date: date,
-            creditor_id: "CIDZZZ00000001",
+            creditor_id: "DE98ZZZ09999999999",
             creditor_name: "Creditor Name",
             creditor_iban: "DE87200500001234567890"
           }
@@ -499,7 +532,7 @@ defmodule ExSepa.DirectDebitTest do
                  %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-001",
                    due_date: date,
-                   creditor_id: "CIDZZZ00000001",
+                   creditor_id: "DE98ZZZ09999999999",
                    creditor_name: "Creditor Name",
                    creditor_iban: "DE87200500001234567890",
                    creditor_bic: "",
@@ -552,7 +585,7 @@ defmodule ExSepa.DirectDebitTest do
           %{
             payment_id: "Pmt-ID-001",
             due_date: date,
-            creditor_id: "CIDZZZ00000001",
+            creditor_id: "DE98ZZZ09999999999",
             creditor_name: "Creditor Name",
             creditor_iban: "DE87200500001234567890"
           }
@@ -564,7 +597,7 @@ defmodule ExSepa.DirectDebitTest do
           %{
             payment_id: "Pmt-ID-002",
             due_date: date |> Date.add(1),
-            creditor_id: "CIDZZZ00000001",
+            creditor_id: "DE98ZZZ09999999999",
             creditor_name: "Creditor Name",
             creditor_iban: "DE87200500001234567890"
           }
@@ -645,7 +678,7 @@ defmodule ExSepa.DirectDebitTest do
                    creditor_address: nil,
                    creditor_bic: "",
                    creditor_iban: "DE87200500001234567890",
-                   creditor_id: "CIDZZZ00000001",
+                   creditor_id: "DE98ZZZ09999999999",
                    creditor_name: "Creditor Name",
                    due_date: date |> Date.add(1),
                    payment_id: "Pmt-ID-002",
@@ -708,7 +741,7 @@ defmodule ExSepa.DirectDebitTest do
                  %ExSepa.DirectDebit.PaymentInformation{
                    payment_id: "Pmt-ID-001",
                    due_date: date,
-                   creditor_id: "CIDZZZ00000001",
+                   creditor_id: "DE98ZZZ09999999999",
                    creditor_name: "Creditor Name",
                    creditor_address: nil,
                    creditor_iban: "DE87200500001234567890",
@@ -788,7 +821,7 @@ defmodule ExSepa.DirectDebitTest do
           %{
             payment_id: "Pmt-ID-001",
             due_date: date,
-            creditor_id: "CIDZZZ00000001",
+            creditor_id: "DE98ZZZ09999999999",
             creditor_name: "Creditor Name",
             creditor_iban: "DE87200500001234567890"
           }
@@ -841,7 +874,7 @@ defmodule ExSepa.DirectDebitTest do
              |> ExSepa.DirectDebit.add_payment_information(%{
                payment_id: pmt_id,
                due_date: date,
-               creditor_id: "DE00ZZZ00099999999",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban
              })
@@ -858,7 +891,7 @@ defmodule ExSepa.DirectDebitTest do
                }
              )
              |> ExSepa.DirectDebit.to_xml() ==
-               "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Document xmlns=\"urn:iso:std:iso:20022:tech:xsd:pain.008.001.08\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:iso:std:iso:20022:tech:xsd:pain.008.001.08 pain.008.001.08.xsd\">\n  <CstmrDrctDbtInitn>\n    <GrpHdr>\n      <MsgId>#{msg_id}</MsgId>\n      <CreDtTm>#{DateTime.to_iso8601(DateTime.utc_now(:second))}</CreDtTm>\n      <NbOfTxs>1</NbOfTxs>\n      <CtrlSum>#{price}</CtrlSum>\n      <InitgPty>\n        <Nm>#{i_party}</Nm>\n      </InitgPty>\n    </GrpHdr>\n    <PmtInf>\n      <PmtInfId>#{pmt_id}</PmtInfId>\n      <PmtMtd>DD</PmtMtd>\n      <NbOfTxs>1</NbOfTxs>\n      <CtrlSum>#{price}</CtrlSum>\n      <PmtTpInf>\n        <SvcLvl>\n          <Cd>SEPA</Cd>\n        </SvcLvl>\n        <LclInstrm>\n          <Cd>CORE</Cd>\n        </LclInstrm>\n        <SeqTp>OOFF</SeqTp>\n      </PmtTpInf>\n      <ReqdColltnDt>#{date}</ReqdColltnDt>\n      <Cdtr>\n        <Nm>#{creditor_name}</Nm>\n      </Cdtr>\n      <CdtrAcct>\n        <Id>\n          <IBAN>#{creditor_iban}</IBAN>\n        </Id>\n      </CdtrAcct>\n      <CdtrAgt>\n        <FinInstnId>\n          <Othr>\n            <Id>NOTPROVIDED</Id>\n          </Othr>\n        </FinInstnId>\n      </CdtrAgt>\n      <ChrgBr>SLEV</ChrgBr>\n      <CdtrSchmeId>\n        <Id>\n          <PrvtId>\n            <Othr>\n              <Id>DE00ZZZ00099999999</Id>\n              <SchmeNm>\n                <Prtry>SEPA</Prtry>\n              </SchmeNm>\n            </Othr>\n          </PrvtId>\n        </Id>\n      </CdtrSchmeId>\n      <DrctDbtTxInf>\n        <PmtId>\n          <EndToEndId>#{end_to_end_id}</EndToEndId>\n        </PmtId>\n        <InstdAmt Ccy=\"EUR\">#{price}</InstdAmt>\n        <DrctDbtTx>\n          <MndtRltdInf>\n            <MndtId>#{mndt_id}</MndtId>\n            <DtOfSgntr>#{mndt_date}</DtOfSgntr>\n          </MndtRltdInf>\n        </DrctDbtTx>\n        <DbtrAgt>\n          <FinInstnId>\n            <Othr>\n              <Id>NOTPROVIDED</Id>\n            </Othr>\n          </FinInstnId>\n        </DbtrAgt>\n        <Dbtr>\n          <Nm>#{debtor_name}</Nm>\n        </Dbtr>\n        <DbtrAcct>\n          <Id>\n            <IBAN>#{debtor_iban}</IBAN>\n          </Id>\n        </DbtrAcct>\n        <RmtInf>\n          <Ustrd>#{@remittance_information}</Ustrd>\n        </RmtInf>\n      </DrctDbtTxInf>\n    </PmtInf>\n  </CstmrDrctDbtInitn>\n</Document>"
+               "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Document xmlns=\"urn:iso:std:iso:20022:tech:xsd:pain.008.001.08\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:iso:std:iso:20022:tech:xsd:pain.008.001.08 pain.008.001.08.xsd\">\n  <CstmrDrctDbtInitn>\n    <GrpHdr>\n      <MsgId>#{msg_id}</MsgId>\n      <CreDtTm>#{DateTime.to_iso8601(DateTime.utc_now(:second))}</CreDtTm>\n      <NbOfTxs>1</NbOfTxs>\n      <CtrlSum>#{price}</CtrlSum>\n      <InitgPty>\n        <Nm>#{i_party}</Nm>\n      </InitgPty>\n    </GrpHdr>\n    <PmtInf>\n      <PmtInfId>#{pmt_id}</PmtInfId>\n      <PmtMtd>DD</PmtMtd>\n      <NbOfTxs>1</NbOfTxs>\n      <CtrlSum>#{price}</CtrlSum>\n      <PmtTpInf>\n        <SvcLvl>\n          <Cd>SEPA</Cd>\n        </SvcLvl>\n        <LclInstrm>\n          <Cd>CORE</Cd>\n        </LclInstrm>\n        <SeqTp>OOFF</SeqTp>\n      </PmtTpInf>\n      <ReqdColltnDt>#{date}</ReqdColltnDt>\n      <Cdtr>\n        <Nm>#{creditor_name}</Nm>\n      </Cdtr>\n      <CdtrAcct>\n        <Id>\n          <IBAN>#{creditor_iban}</IBAN>\n        </Id>\n      </CdtrAcct>\n      <CdtrAgt>\n        <FinInstnId>\n          <Othr>\n            <Id>NOTPROVIDED</Id>\n          </Othr>\n        </FinInstnId>\n      </CdtrAgt>\n      <ChrgBr>SLEV</ChrgBr>\n      <CdtrSchmeId>\n        <Id>\n          <PrvtId>\n            <Othr>\n              <Id>DE98ZZZ09999999999</Id>\n              <SchmeNm>\n                <Prtry>SEPA</Prtry>\n              </SchmeNm>\n            </Othr>\n          </PrvtId>\n        </Id>\n      </CdtrSchmeId>\n      <DrctDbtTxInf>\n        <PmtId>\n          <EndToEndId>#{end_to_end_id}</EndToEndId>\n        </PmtId>\n        <InstdAmt Ccy=\"EUR\">#{price}</InstdAmt>\n        <DrctDbtTx>\n          <MndtRltdInf>\n            <MndtId>#{mndt_id}</MndtId>\n            <DtOfSgntr>#{mndt_date}</DtOfSgntr>\n          </MndtRltdInf>\n        </DrctDbtTx>\n        <DbtrAgt>\n          <FinInstnId>\n            <Othr>\n              <Id>NOTPROVIDED</Id>\n            </Othr>\n          </FinInstnId>\n        </DbtrAgt>\n        <Dbtr>\n          <Nm>#{debtor_name}</Nm>\n        </Dbtr>\n        <DbtrAcct>\n          <Id>\n            <IBAN>#{debtor_iban}</IBAN>\n          </Id>\n        </DbtrAcct>\n        <RmtInf>\n          <Ustrd>#{@remittance_information}</Ustrd>\n        </RmtInf>\n      </DrctDbtTxInf>\n    </PmtInf>\n  </CstmrDrctDbtInitn>\n</Document>"
     end
 
     test "Generate XML with BIC" do
@@ -883,7 +916,7 @@ defmodule ExSepa.DirectDebitTest do
              |> ExSepa.DirectDebit.add_payment_information(%{
                payment_id: pmt_id,
                due_date: date,
-               creditor_id: "DE00ZZZ00099999999",
+               creditor_id: "DE98ZZZ09999999999",
                creditor_name: creditor_name,
                creditor_iban: creditor_iban,
                creditor_bic: "BANKDEFFXXX"
@@ -902,7 +935,7 @@ defmodule ExSepa.DirectDebitTest do
                }
              )
              |> ExSepa.DirectDebit.to_xml() ==
-               "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Document xmlns=\"urn:iso:std:iso:20022:tech:xsd:pain.008.001.08\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:iso:std:iso:20022:tech:xsd:pain.008.001.08 pain.008.001.08.xsd\">\n  <CstmrDrctDbtInitn>\n    <GrpHdr>\n      <MsgId>#{msg_id}</MsgId>\n      <CreDtTm>#{DateTime.to_iso8601(DateTime.utc_now(:second))}</CreDtTm>\n      <NbOfTxs>1</NbOfTxs>\n      <CtrlSum>#{price}</CtrlSum>\n      <InitgPty>\n        <Nm>#{i_party}</Nm>\n      </InitgPty>\n    </GrpHdr>\n    <PmtInf>\n      <PmtInfId>#{pmt_id}</PmtInfId>\n      <PmtMtd>DD</PmtMtd>\n      <NbOfTxs>1</NbOfTxs>\n      <CtrlSum>#{price}</CtrlSum>\n      <PmtTpInf>\n        <SvcLvl>\n          <Cd>SEPA</Cd>\n        </SvcLvl>\n        <LclInstrm>\n          <Cd>CORE</Cd>\n        </LclInstrm>\n        <SeqTp>OOFF</SeqTp>\n      </PmtTpInf>\n      <ReqdColltnDt>#{date}</ReqdColltnDt>\n      <Cdtr>\n        <Nm>#{creditor_name}</Nm>\n      </Cdtr>\n      <CdtrAcct>\n        <Id>\n          <IBAN>#{creditor_iban}</IBAN>\n        </Id>\n      </CdtrAcct>\n      <CdtrAgt>\n        <FinInstnId>\n          <BICFI>BANKDEFFXXX</BICFI>\n        </FinInstnId>\n      </CdtrAgt>\n      <ChrgBr>SLEV</ChrgBr>\n      <CdtrSchmeId>\n        <Id>\n          <PrvtId>\n            <Othr>\n              <Id>DE00ZZZ00099999999</Id>\n              <SchmeNm>\n                <Prtry>SEPA</Prtry>\n              </SchmeNm>\n            </Othr>\n          </PrvtId>\n        </Id>\n      </CdtrSchmeId>\n      <DrctDbtTxInf>\n        <PmtId>\n          <EndToEndId>#{end_to_end_id}</EndToEndId>\n        </PmtId>\n        <InstdAmt Ccy=\"EUR\">#{price}</InstdAmt>\n        <DrctDbtTx>\n          <MndtRltdInf>\n            <MndtId>#{mndt_id}</MndtId>\n            <DtOfSgntr>#{mndt_date}</DtOfSgntr>\n          </MndtRltdInf>\n        </DrctDbtTx>\n        <DbtrAgt>\n          <FinInstnId>\n            <BICFI>RAIFCH22005</BICFI>\n          </FinInstnId>\n        </DbtrAgt>\n        <Dbtr>\n          <Nm>#{debtor_name}</Nm>\n        </Dbtr>\n        <DbtrAcct>\n          <Id>\n            <IBAN>#{debtor_iban}</IBAN>\n          </Id>\n        </DbtrAcct>\n        <RmtInf>\n          <Ustrd>#{@remittance_information}</Ustrd>\n        </RmtInf>\n      </DrctDbtTxInf>\n    </PmtInf>\n  </CstmrDrctDbtInitn>\n</Document>"
+               "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Document xmlns=\"urn:iso:std:iso:20022:tech:xsd:pain.008.001.08\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"urn:iso:std:iso:20022:tech:xsd:pain.008.001.08 pain.008.001.08.xsd\">\n  <CstmrDrctDbtInitn>\n    <GrpHdr>\n      <MsgId>#{msg_id}</MsgId>\n      <CreDtTm>#{DateTime.to_iso8601(DateTime.utc_now(:second))}</CreDtTm>\n      <NbOfTxs>1</NbOfTxs>\n      <CtrlSum>#{price}</CtrlSum>\n      <InitgPty>\n        <Nm>#{i_party}</Nm>\n      </InitgPty>\n    </GrpHdr>\n    <PmtInf>\n      <PmtInfId>#{pmt_id}</PmtInfId>\n      <PmtMtd>DD</PmtMtd>\n      <NbOfTxs>1</NbOfTxs>\n      <CtrlSum>#{price}</CtrlSum>\n      <PmtTpInf>\n        <SvcLvl>\n          <Cd>SEPA</Cd>\n        </SvcLvl>\n        <LclInstrm>\n          <Cd>CORE</Cd>\n        </LclInstrm>\n        <SeqTp>OOFF</SeqTp>\n      </PmtTpInf>\n      <ReqdColltnDt>#{date}</ReqdColltnDt>\n      <Cdtr>\n        <Nm>#{creditor_name}</Nm>\n      </Cdtr>\n      <CdtrAcct>\n        <Id>\n          <IBAN>#{creditor_iban}</IBAN>\n        </Id>\n      </CdtrAcct>\n      <CdtrAgt>\n        <FinInstnId>\n          <BICFI>BANKDEFFXXX</BICFI>\n        </FinInstnId>\n      </CdtrAgt>\n      <ChrgBr>SLEV</ChrgBr>\n      <CdtrSchmeId>\n        <Id>\n          <PrvtId>\n            <Othr>\n              <Id>DE98ZZZ09999999999</Id>\n              <SchmeNm>\n                <Prtry>SEPA</Prtry>\n              </SchmeNm>\n            </Othr>\n          </PrvtId>\n        </Id>\n      </CdtrSchmeId>\n      <DrctDbtTxInf>\n        <PmtId>\n          <EndToEndId>#{end_to_end_id}</EndToEndId>\n        </PmtId>\n        <InstdAmt Ccy=\"EUR\">#{price}</InstdAmt>\n        <DrctDbtTx>\n          <MndtRltdInf>\n            <MndtId>#{mndt_id}</MndtId>\n            <DtOfSgntr>#{mndt_date}</DtOfSgntr>\n          </MndtRltdInf>\n        </DrctDbtTx>\n        <DbtrAgt>\n          <FinInstnId>\n            <BICFI>RAIFCH22005</BICFI>\n          </FinInstnId>\n        </DbtrAgt>\n        <Dbtr>\n          <Nm>#{debtor_name}</Nm>\n        </Dbtr>\n        <DbtrAcct>\n          <Id>\n            <IBAN>#{debtor_iban}</IBAN>\n          </Id>\n        </DbtrAcct>\n        <RmtInf>\n          <Ustrd>#{@remittance_information}</Ustrd>\n        </RmtInf>\n      </DrctDbtTxInf>\n    </PmtInf>\n  </CstmrDrctDbtInitn>\n</Document>"
     end
 
     test "Generate XML with prebuilt transaction_information list" do
@@ -961,7 +994,7 @@ defmodule ExSepa.DirectDebitTest do
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: pmt_id,
           due_date: date,
-          creditor_id: "DE00ZZZ00099999999",
+          creditor_id: "DE98ZZZ09999999999",
           creditor_name: creditor_name,
           creditor_iban: creditor_iban,
           transaction_information: trans_infos
@@ -982,14 +1015,14 @@ defmodule ExSepa.DirectDebitTest do
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Pmt-ID-001",
           due_date: date,
-          creditor_id: "CIDZZZ00000001",
+          creditor_id: "DE98ZZZ09999999999",
           creditor_name: "Creditor Name",
           creditor_iban: "DE87200500001234567890"
         })
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Pmt-ID-002",
           due_date: date |> Date.add(1),
-          creditor_id: "CIDZZZ00000001",
+          creditor_id: "DE98ZZZ09999999999",
           creditor_name: "Creditor Name",
           creditor_iban: "DE87200500001234567890"
         })
@@ -1019,7 +1052,7 @@ defmodule ExSepa.DirectDebitTest do
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Payment-ID-0003",
           due_date: Date.utc_today() |> Date.add(5),
-          creditor_id: "DE00ZZZ00099999999",
+          creditor_id: "DE98ZZZ09999999999",
           creditor_name: "Creditor Name",
           creditor_iban: "DE87200500001234567890"
         })
@@ -1050,7 +1083,7 @@ defmodule ExSepa.DirectDebitTest do
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Payment-ID-0004",
           due_date: ~D[2026-11-14],
-          creditor_id: "DE00ZZZ00099999999",
+          creditor_id: "DE98ZZZ09999999999",
           creditor_name: "Creditor Name",
           creditor_iban: "DE87200500001234567890",
           creditor_bic: "BANKDEFF"
@@ -1075,13 +1108,43 @@ defmodule ExSepa.DirectDebitTest do
       validate_against_gbic_5_pain_008(xml)
     end
 
+    test "Generate XML without remittance information omits RmtInf and stays schema-valid" do
+      xml =
+        ExSepa.DirectDebit.new(%{
+          msg_id: "Msg-ID-004B",
+          initiating_party_name: "Initiating Party"
+        })
+        |> ExSepa.DirectDebit.add_payment_information(%{
+          payment_id: "Payment-ID-0004B",
+          due_date: Date.utc_today() |> Date.add(5),
+          creditor_id: @creditor_id,
+          creditor_name: "Creditor Name",
+          creditor_iban: "DE87200500001234567890"
+        })
+        |> ExSepa.DirectDebit.add_transaction_information(
+          "Payment-ID-0004B",
+          %{
+            end_to_end_id: "EndToEndId-0004B",
+            amount: 100.01,
+            mandate_id: "Mandate-Id-04B",
+            mandate_signing_date: ~D[2024-04-24],
+            debtor_name: "Debtor Name",
+            debtor_iban: "DE88100900001234567892"
+          }
+        )
+        |> ExSepa.DirectDebit.to_xml()
+
+      refute xml =~ "<RmtInf>"
+      validate_against_gbic_5_pain_008(xml)
+    end
+
     test "Generate XML with hybrid address lines" do
       xml =
         ExSepa.DirectDebit.new(%{msg_id: "Msg-ID-005", initiating_party_name: "Initiating Party"})
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Payment-ID-0005",
           due_date: Date.utc_today() |> Date.add(5),
-          creditor_id: "DE00ZZZ00099999999",
+          creditor_id: "DE98ZZZ09999999999",
           creditor_name: "Creditor Name",
           creditor_iban: "DE87200500001234567890"
         })
@@ -1122,7 +1185,7 @@ defmodule ExSepa.DirectDebitTest do
                      |> ExSepa.DirectDebit.add_payment_information(%{
                        payment_id: "Payment-ID-0007",
                        due_date: Date.utc_today() |> Date.add(5),
-                       creditor_id: "DE00ZZZ00099999999",
+                       creditor_id: "DE98ZZZ09999999999",
                        creditor_name: "Creditor Name",
                        creditor_iban: "DE87200500001234567890"
                      })
@@ -1154,7 +1217,7 @@ defmodule ExSepa.DirectDebitTest do
                      |> ExSepa.DirectDebit.add_payment_information(%{
                        payment_id: "Payment-ID-0008",
                        due_date: Date.utc_today() |> Date.add(5),
-                       creditor_id: "DE00ZZZ00099999999",
+                       creditor_id: "DE98ZZZ09999999999",
                        creditor_name: "Creditor Name",
                        creditor_iban: "DE87200500001234567890",
                        creditor_address: %{

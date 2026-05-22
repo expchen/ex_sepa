@@ -169,6 +169,23 @@ defmodule ExSepa.CreditTransfer.PaymentInformationTest do
                 }}
     end
 
+    test "fail: transaction_information list contains wrong struct" do
+      payment_id = example_payment_id()
+      date = Date.utc_today()
+      debtor_name = example_person_name()
+      debtor_iban = example_eea_iban()
+
+      assert ExSepa.CreditTransfer.PaymentInformation.new(%{
+               payment_id: payment_id,
+               requested_execution_date: date,
+               debtor_name: debtor_name,
+               debtor_iban: debtor_iban,
+               transaction_information: [%{end_to_end_id: "invalid"}]
+             }) ==
+               {:error,
+                "transaction_information[0]: must be a ExSepa.CreditTransfer.TransactionInformation struct"}
+    end
+
     test "fail: debtor_address is not a map" do
       payment_id = example_payment_id()
       date = Date.utc_today()
@@ -257,6 +274,45 @@ defmodule ExSepa.CreditTransfer.PaymentInformationTest do
                debtor_name: debtor_name,
                debtor_iban: debtor_iban
              }) == {:error, "debtor_name: Maximum length of 70 characters"}
+    end
+
+    test "fail: debtor_name must not begin with /" do
+      payment_id = example_payment_id()
+      date = Date.utc_today()
+      debtor_iban = example_eea_iban()
+
+      assert ExSepa.CreditTransfer.PaymentInformation.new(%{
+               payment_id: payment_id,
+               requested_execution_date: date,
+               debtor_name: "/Debtor Name",
+               debtor_iban: debtor_iban
+             }) == {:error, "debtor_name: Text field must not begin with '/'"}
+    end
+
+    test "fail: debtor_name must not end with /" do
+      payment_id = example_payment_id()
+      date = Date.utc_today()
+      debtor_iban = example_eea_iban()
+
+      assert ExSepa.CreditTransfer.PaymentInformation.new(%{
+               payment_id: payment_id,
+               requested_execution_date: date,
+               debtor_name: "Debtor Name/",
+               debtor_iban: debtor_iban
+             }) == {:error, "debtor_name: Text field must not end with '/'"}
+    end
+
+    test "fail: debtor_name must not contain //" do
+      payment_id = example_payment_id()
+      date = Date.utc_today()
+      debtor_iban = example_eea_iban()
+
+      assert ExSepa.CreditTransfer.PaymentInformation.new(%{
+               payment_id: payment_id,
+               requested_execution_date: date,
+               debtor_name: "Debtor // Name",
+               debtor_iban: debtor_iban
+             }) == {:error, "debtor_name: Text field must not contain '//'"}
     end
 
     test "fail: debtor_name wrong type" do

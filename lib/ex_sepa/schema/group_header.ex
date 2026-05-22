@@ -1,10 +1,17 @@
 defmodule ExSepa.Schema.GroupHeader do
   alias ExSepa.Validation.Field, as: FieldValidation
 
-  @moduledoc false
-  # """
-  # Group Header: Set of characteristics shared by all individual transactions included in the message.
-  # """
+  @moduledoc """
+  Public group header model shared by all transactions in a SEPA message.
+
+  A group header identifies the message as a whole and stores the initiating
+  party name used in the generated XML.
+
+  ## Required Fields
+
+    * `:msg_id` - unique message identifier
+    * `:initiating_party_name` - name of the initiating party
+  """
 
   @enforce_keys [:msg_id, :initiating_party_name]
   @typedoc false
@@ -14,12 +21,27 @@ defmodule ExSepa.Schema.GroupHeader do
         }
   defstruct [:msg_id, :initiating_party_name]
 
-  @doc false
-  # """
-  # The map has the following keys:
-  #   * `:msg_id` - Message Identification: Point to point reference, assigned by the instructing party and sent to the next party in the chain, to unambiguously identify the message (maximum length of 35 characters).
-  #   * `:initiating_party_name`- Initiating Party Name: Name by which a party is known and which is usually used to identify that party (maximum length of 70 characters).
-  # """
+  @doc """
+  Validates input and builds a group header struct.
+
+  Required keys are `:msg_id` and `:initiating_party_name`.
+
+  Both values must be UTF-8 strings and are validated against the EPC text
+  rules. `:msg_id` is limited to 35 characters and
+  `:initiating_party_name` is limited to 70 characters.
+
+  ## Examples
+
+      iex> ExSepa.Schema.GroupHeader.new(%{
+      ...>   msg_id: "Msg-ID-0001",
+      ...>   initiating_party_name: "Example GmbH"
+      ...> })
+      {:ok,
+       %ExSepa.Schema.GroupHeader{
+         msg_id: "Msg-ID-0001",
+         initiating_party_name: "Example GmbH"
+       }}
+  """
   @spec new(%{
           msg_id: String.t(),
           initiating_party_name: String.t()

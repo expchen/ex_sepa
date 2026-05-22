@@ -1,6 +1,8 @@
 defmodule ExSepa do
   @moduledoc """
-  This module is the entry point for generating SEPA customer-to-PSP XML messages.
+  Entry point for generating SEPA customer-to-PSP XML messages and HexDocs home page.
+  ExSepa generates SEPA customer-to-PSP XML messages and validates the final
+  XML against the relevant XSD files.
 
   Primary scheme modules:
 
@@ -8,6 +10,14 @@ defmodule ExSepa do
     * `ExSepa.CreditTransfer` - SEPA Credit Transfer (`pain.001.001.09`)
     * `ExSepa.CreditTransferInstant` - SEPA Instant Credit Transfer (`pain.001.001.09` with `INST`)
 
+  ## Typical Usage Order
+
+  The workflow is consistent across modules:
+
+    1. Create a message with `new/1`
+    2. Add one or more payment groups with `add_payment_information/2`
+    3. Add one or more transactions with `add_transaction_information/3`
+    4. Generate validated XML with `to_xml/1`
   """
 
   @doc false
@@ -21,7 +31,7 @@ defmodule ExSepa do
         %{
           payment_id: "Payment-ID-0001",
           due_date: Date.utc_today() |> Date.add(5),
-          creditor_id: "DE00ZZZ00099999999",
+          creditor_id: "DE98ZZZ09999999999",
           creditor_name: "Creditor Name",
           creditor_iban: "DE87200500001234567890"
         }
@@ -55,7 +65,7 @@ defmodule ExSepa do
     |> ExSepa.DirectDebit.add_payment_information(%{
       payment_id: "Payment-ID-0002",
       due_date: Date.utc_today() |> Date.add(5),
-      creditor_id: "DE00ZZZ00099999999",
+      creditor_id: "DE98ZZZ09999999999",
       creditor_name: "Creditor Name",
       creditor_iban: "DE87200500001234567890"
     })
@@ -84,7 +94,7 @@ defmodule ExSepa do
     |> ExSepa.DirectDebit.add_payment_information(%{
       payment_id: "Payment-ID-0003",
       due_date: Date.utc_today() |> Date.add(5),
-      creditor_id: "DE00ZZZ00099999999",
+      creditor_id: "DE98ZZZ09999999999",
       creditor_name: "Creditor Name",
       creditor_iban: "DE87200500001234567890"
     })

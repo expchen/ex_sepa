@@ -1,10 +1,23 @@
 defmodule ExSepa.DirectDebit.TransactionInformation do
   alias ExSepa.Validation.Field, as: FieldValidation
 
-  @moduledoc false
-  # """
-  # Direct Debit Transaction Information: Provides information on the individual transaction(s) included in the message.
-  # """
+  @moduledoc """
+  Public transaction model for a single SEPA direct debit collection.
+
+  Each entry describes one debtor collection within a direct debit batch.
+
+  ## Required Fields
+
+    * `:end_to_end_id` - creditor reference for the transaction
+    * `:amount` - amount in euro
+    * `:mandate_id` - unique mandate reference
+    * `:mandate_signing_date` - mandate signature date
+    * `:debtor_name` - debtor name
+    * `:debtor_iban` - debtor IBAN
+
+  Optional debtor BIC, debtor address, and remittance information may also be
+  provided.
+  """
 
   @enforce_keys [
     :end_to_end_id,
@@ -38,22 +51,39 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
     remittance_information: ""
   ]
 
-  @doc false
-  # """
-  # Add Transaction Information: Provides information on the individual transaction included in the message.
+  @doc """
+  Validates input and builds a direct debit transaction struct.
 
-  # The map has the following keys:
+  Required keys are `:end_to_end_id`, `:amount`, `:mandate_id`,
+  `:mandate_signing_date`, `:debtor_name`, and `:debtor_iban`.
 
-  #   * `:end_to_end_id` - The Creditor's Reference of the Direct Debit Transaction (maximum length of 35 characters).
-  #   * `:amount` - The Amount of the Collection in euro.
-  #   * `:mandate_id` - The Unique Mandate Reference (maximum length of 35 characters).
-  #   * `:mandate_signing_date` - The Date of Signing of the Mandate (ISODate).
-  #   * `:debtor_name` - The Name of the Debtor (maximum length of 70 characters).
-  #   * `:debtor_iban` - The account number (IBAN) of the Debtor.
-  #   * `:debtor_bic` - OPTIONAL: BIC code of the Debtor PSP. Only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory.
-  #   * `:debtor_address` - OPTIONAL: Structured or hybrid address. Only mandatory when the Creditor PSP or the Debtor PSP is located in a non-EEA SEPA country or territory. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
-  #   * `:remittance_information` - OPTIONAL: The Remittance information sent by the Creditor to the Debtor in the Collection (maximum length of 140 characters).
-  # """
+  The amount must be a positive euro value with up to two decimal places and
+  `:mandate_signing_date` must be a `Date`. Optional `:debtor_bic`,
+  `:debtor_address`, and `:remittance_information` may also be provided.
+
+  ## Example
+
+      iex> ExSepa.DirectDebit.TransactionInformation.new(%{
+      ...>   end_to_end_id: "E2E-0001",
+      ...>   amount: 49.99,
+      ...>   mandate_id: "MANDATE-0001",
+      ...>   mandate_signing_date: ~D[2024-01-15],
+      ...>   debtor_name: "Member One",
+      ...>   debtor_iban: "DE88100900001234567892"
+      ...> })
+      {:ok,
+       %ExSepa.DirectDebit.TransactionInformation{
+         end_to_end_id: "E2E-0001",
+         amount: 49.99,
+         mandate_id: "MANDATE-0001",
+         mandate_signing_date: ~D[2024-01-15],
+         debtor_name: "Member One",
+         debtor_address: nil,
+         debtor_iban: "DE88100900001234567892",
+         debtor_bic: "",
+         remittance_information: ""
+       }}
+  """
   @spec new(%{
           :end_to_end_id => binary(),
           :amount => float(),

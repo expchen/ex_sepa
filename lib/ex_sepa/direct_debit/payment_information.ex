@@ -1,10 +1,23 @@
 defmodule ExSepa.DirectDebit.PaymentInformation do
   alias ExSepa.Validation.Field, as: FieldValidation
 
-  @moduledoc false
-  # """
-  # Payment Information: Set of characteristics that apply to the credit side of the payment transactions included in the direct debit transaction initiation.
-  # """
+  @moduledoc """
+  Public payment information model for SEPA direct debit batches.
+
+  Each payment information block groups collections that share the same creditor,
+  due date, and sequence type.
+
+  ## Required Fields
+
+    * `:payment_id` - unique identifier for the payment information block
+    * `:due_date` - collection due date
+    * `:creditor_id` - SEPA creditor identifier
+    * `:creditor_name` - creditor name
+    * `:creditor_iban` - creditor IBAN
+
+  Optional creditor BIC, creditor address, sequence type, and prebuilt
+  transaction information entries may also be provided.
+  """
 
   @type sequence_type3_code_atom :: :OneOff | :First | :Recurring | :Final
   @sequence_type3_code_atom [:OneOff, :First, :Recurring, :Final]
@@ -36,21 +49,39 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
     transaction_information: []
   ]
 
-  @doc false
-  # """
-  # Add Payment Information: Set of characteristics that apply to the credit side of the payment transactions included in the direct debit transaction initiation.
+  @doc """
+  Validates input and builds a direct debit payment information struct.
 
-  # The map has the following keys:
+  Required keys are `:payment_id`, `:due_date`, `:creditor_id`,
+  `:creditor_name`, and `:creditor_iban`.
 
-  #   * `:payment_id` - Unique identification, as assigned by a sending party, to unambiguously identify the payment information group within the message (maximum length of 35 characters).
-  #   * `:due_date` - The Due Date of the Collection (ISODate).
-  #   * `:creditor_id` - Unique and unambiguous identification of a party (maximum length of 35 characters.).
-  #   * `:creditor_name` - The Name of the Creditor (maximum length of 70 characters).
-  #   * `:creditor_iban` - The account number (IBAN) of the Creditor.
-  #   * `:creditor_bic` - OPTIONAL: BIC code of the Creditor PSP.
-  #   * `:sequence_type` - OPTIONAL: Identifies the direct debit sequence, such as one-off, first, recurrent or final ("OOFF", "FRST", "RCUR" or "FNAL").
-  #   * `:creditor_address` - OPTIONAL: Structured or hybrid address. At least `:town_name` and `:country` must be used. `:address_lines` may additionally be used for up to two hybrid address lines. More details in `ExSepa.Address`.
-  # """
+  Optional `:creditor_bic`, `:creditor_address`, `:sequence_type`, and prebuilt
+  `:transaction_information` entries may also be provided. Accepted
+  `:sequence_type` values are `:OneOff`, `:First`, `:Recurring`, and `:Final`.
+  If omitted, `:sequence_type` defaults to `:OneOff`.
+
+  ## Example
+
+      iex> ExSepa.DirectDebit.PaymentInformation.new(%{
+      ...>   payment_id: "Payment-ID-0001",
+      ...>   due_date: Date.utc_today() |> Date.add(5),
+      ...>   creditor_id: "DE98ZZZ09999999999",
+      ...>   creditor_name: "Example Club",
+      ...>   creditor_iban: "DE87200500001234567890"
+      ...> })
+      {:ok,
+       %ExSepa.DirectDebit.PaymentInformation{
+         payment_id: "Payment-ID-0001",
+         due_date: Date.utc_today() |> Date.add(5),
+         creditor_id: "DE98ZZZ09999999999",
+         creditor_name: "Example Club",
+         creditor_address: nil,
+         creditor_iban: "DE87200500001234567890",
+         creditor_bic: "",
+         sequence_type: :OneOff,
+         transaction_information: []
+       }}
+  """
   @spec new(%{
           :payment_id => String.t(),
           :due_date => any(),
@@ -72,7 +103,7 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
              is_binary(creditor_name) and is_binary(creditor_iban) do
     with {:ok, new_payment_id} <- FieldValidation.max_text(:payment_id, payment_id, 35),
          :ok <- FieldValidation.due_date(due_date),
-         {:ok, new_creditor_id} <- FieldValidation.max_text(:creditor_id, creditor_id, 35),
+         {:ok, new_creditor_id} <- FieldValidation.creditor_identifier(creditor_id),
          {:ok, new_creditor_name} <- FieldValidation.max_text(:creditor_name, creditor_name, 70),
          :ok <- FieldValidation.iban(creditor_iban),
          {:ok, optional_data} <- get_optional_data(payment_information) do
