@@ -54,6 +54,54 @@ defmodule ExSepa.Validation.FieldTest do
     end
   end
 
+  describe "ExSepa.Validation.Field.iso_country_code/1" do
+    test "accepts ISO country codes beyond the SEPA lists" do
+      assert ExSepa.Validation.Field.iso_country_code("DE") == :ok
+      assert ExSepa.Validation.Field.iso_country_code("US") == :ok
+      assert ExSepa.Validation.Field.iso_country_code("TW") == :ok
+    end
+
+    test "rejects invalid ISO country code formats and values" do
+      assert ExSepa.Validation.Field.iso_country_code("us") ==
+               {:error, "These characters are not part of the pattern test: us"}
+
+      assert ExSepa.Validation.Field.iso_country_code("USA") ==
+               {:error, "These characters are not part of the pattern test: A"}
+
+      assert ExSepa.Validation.Field.iso_country_code("ZZ") ==
+               {:error, "Country code not in ISO list!"}
+    end
+  end
+
+  describe "ExSepa.Validation.Field.international_text/3" do
+    test "accepts broader UTF-8 input without SEPA transliteration" do
+      assert ExSepa.Validation.Field.international_text(:creditor_name, "Łukasz García", 70) ==
+               {:ok, "Łukasz García"}
+    end
+
+    test "trims surrounding whitespace but keeps international characters" do
+      assert ExSepa.Validation.Field.international_text(:creditor_name, "  José Álvarez  ", 70) ==
+               {:ok, "José Álvarez"}
+    end
+
+    test "keeps the existing slash formatting rules" do
+      assert ExSepa.Validation.Field.international_text(:creditor_name, "/任天堂", 70) ==
+               {:error, "creditor_name: Text field must not begin with '/'"}
+    end
+
+    test "rejects invalid UTF-8 binaries" do
+      assert ExSepa.Validation.Field.international_text(:creditor_name, <<0xFFFF::16>>, 70) ==
+               {:error, "creditor_name: must be UTF-8 encoded binary"}
+    end
+  end
+
+  describe "ExSepa.Validation.Field.optional_international_text/3" do
+    test "accepts blank input" do
+      assert ExSepa.Validation.Field.optional_international_text(:creditor_name, "   ", 70) ==
+               {:ok, ""}
+    end
+  end
+
   describe "ExSepa.Validation.Field.creditor_identifier/1" do
     test "accepts a valid EPC creditor identifier" do
       assert ExSepa.Validation.Field.creditor_identifier("DE98ZZZ09999999999") ==

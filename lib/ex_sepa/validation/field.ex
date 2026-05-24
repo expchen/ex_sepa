@@ -1,7 +1,18 @@
 defmodule ExSepa.Validation.Field do
   alias ExSepa.Validation.CountryCodes
 
-  @moduledoc false
+  @moduledoc """
+  Validation helpers for SEPA payment data.
+
+  The existing public validators remain SEPA-specific. In particular,
+  `max_text/3` performs EPC character normalization and `country_code/1`
+  validates against the SEPA-related country lists.
+
+  The name `max_text/3` is kept for backward compatibility even though its
+  behavior is SEPA/EPC-specific. Helpers such as `international_text/3` and
+  `iso_country_code/1` provide a broader validation baseline for future
+  international or OLO-oriented profiles.
+  """
 
   defp in_language(string, pattern) do
     new_string =
@@ -130,7 +141,7 @@ defmodule ExSepa.Validation.Field do
   end
 
   @doc """
-  Checks the transferred text according to the EPC specifications and returns the text with the best practice conversion.
+  Validates text using the current EPC/SEPA rules and returns the normalized result.
   """
   @spec max_text(atom(), String.t(), non_neg_integer()) ::
           {:ok, String.t()} | {:error, String.t()}
@@ -139,14 +150,32 @@ defmodule ExSepa.Validation.Field do
   end
 
   @doc """
-  Validates optional text using the default EPC strict rules.
-
-  Blank strings are accepted and returned as `{:ok, ""}`.
+  Optional variant of `max_text/3` using the current EPC/SEPA rules.
   """
   @spec optional_max_text(atom(), String.t(), non_neg_integer()) ::
           {:ok, String.t()} | {:error, String.t()}
   def optional_max_text(element, text, length) do
     validate_optional_text(element, text, length)
+  end
+
+  @doc """
+  Validates text for broader international use.
+
+  Unlike `max_text/3`, this helper does not transliterate or restrict input to EPC character subset. It validates UTF-8, trims surrounding whitespace, enforces length limits, and keeps the existing slash formatting rules used by current payment text fields.
+  """
+  @spec international_text(atom(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  def international_text(element, text, length) do
+    validate_international_text(element, text, length)
+  end
+
+  @doc """
+  Optional variant of `international_text/3`.
+  """
+  @spec optional_international_text(atom(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  def optional_international_text(element, text, length) do
+    validate_optional_international_text(element, text, length)
   end
 
   @spec validate_text(atom(), String.t(), non_neg_integer()) ::
@@ -173,6 +202,31 @@ defmodule ExSepa.Validation.Field do
         {:ok, ""}
       else
         validate_text(element, text, length)
+      end
+    end
+  end
+
+  @spec validate_international_text(atom(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp validate_international_text(element, text, length) do
+    with :ok <- real_text(text),
+         trimmed_text = String.trim(text),
+         :ok <- min_max_text(trimmed_text, 1, length),
+         :ok <- validate_slash_rules(trimmed_text) do
+      {:ok, trimmed_text}
+    else
+      {:error, error} -> {:error, "#{element}: #{error}"}
+    end
+  end
+
+  @spec validate_optional_international_text(atom(), String.t(), non_neg_integer()) ::
+          {:ok, String.t()} | {:error, String.t()}
+  defp validate_optional_international_text(element, text, length) do
+    with :ok <- real_text(text) do
+      if String.trim(text) == "" do
+        {:ok, ""}
+      else
+        validate_international_text(element, text, length)
       end
     end
   end
@@ -301,6 +355,22 @@ defmodule ExSepa.Validation.Field do
   end
 
   @doc """
+  Validates an ISO 3166-1 alpha-2 country code.
+
+  This helper is broader than `country_code/1` and is intended for OLO-oriented validation flows.
+  """
+  @spec iso_country_code(String.t()) :: :ok | {:error, String.t()}
+  def iso_country_code(country) do
+    with :ok <- do_pattern_test(country, ~r/[A-Z]{2,2}/) do
+      if CountryCodes.valid_iso_country_code?(country) do
+        :ok
+      else
+        {:error, "Country code not in ISO list!"}
+      end
+    end
+  end
+
+  @doc """
   Validates a SEPA creditor identifier (AT-E005).
   """
   @spec creditor_identifier(String.t()) :: {:ok, String.t()} | {:error, String.t()}
@@ -397,9 +467,6 @@ defmodule ExSepa.Validation.Field do
         {:error, error}
     end
   end
-
-  defp validate_creditor_identifier_national_part(nil),
-    do: {:error, "creditor identifier must include a country-specific identifier"}
 
   defp validate_creditor_identifier_national_part(national_identifier) do
     if national_identifier

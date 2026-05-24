@@ -166,6 +166,13 @@ defmodule ExSepa.Schema.AddressTest do
              }) == {:error, "missing keys: [:country]"}
     end
 
+    test "fail: non-SEPA ISO country codes are rejected in the current address flow" do
+      assert ExSepa.Schema.Address.new(%{
+               town_name: "New York",
+               country: "US"
+             }) == {:error, "Country code not in list!"}
+    end
+
     test "fail: address without town_name and country" do
       assert ExSepa.Schema.Address.new(%{}) == {:error, "missing keys: [:town_name, :country]"}
     end

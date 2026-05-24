@@ -1,5 +1,14 @@
 defmodule ExSepa.Validation.CountryCodes do
-  @moduledoc false
+  @moduledoc """
+  Country-code lists used by the validation layer.
+
+  Multiple country scopes:
+
+  - SEPA/IBAN-related country lists used by current payment validation
+  - SEPA/BIC-related country lists used by current country checks
+  - a broader ISO 3166-1 alpha-2 list for more international checks
+
+  """
 
   @type country_code :: String.t()
 
@@ -132,35 +141,51 @@ defmodule ExSepa.Validation.CountryCodes do
     ZA ZM ZW
   )
 
-  @doc false
+  @doc """
+  Returns EEA country codes currently treated as valid for IBAN-based SEPA flows.
+  """
   @spec get_eea_iban_country_codes() :: [country_code()]
   def get_eea_iban_country_codes, do: @eea_iban_country_codes
 
-  @doc false
+  @doc """
+  Returns non-EEA country codes currently treated as valid for IBAN-based SEPA flows.
+  """
   @spec get_non_eea_iban_country_codes() :: [country_code()]
   def get_non_eea_iban_country_codes, do: @non_eea_iban_country_codes
 
-  @doc false
+  @doc """
+  Returns the combined IBAN-related country list used by current SEPA flows.
+  """
   @spec get_iban_country_codes() :: [country_code()]
   def get_iban_country_codes, do: @iban_country_codes
 
-  @doc false
+  @doc """
+  Returns EEA country codes currently treated as valid for BIC-related SEPA validation.
+  """
   @spec get_eea_bic_country_codes() :: [country_code()]
   def get_eea_bic_country_codes, do: @eea_bic_country_codes
 
-  @doc false
+  @doc """
+  Returns non-EEA country codes currently treated as valid for BIC-related SEPA validation.
+  """
   @spec get_non_eea_bic_country_codes() :: [country_code()]
   def get_non_eea_bic_country_codes, do: @non_eea_bic_country_codes
 
-  @doc false
+  @doc """
+  Returns the combined BIC-related country list used by current SEPA validation.
+  """
   @spec get_bic_country_codes() :: [country_code()]
   def get_bic_country_codes, do: @bic_country_codes
 
-  @doc false
+  @doc """
+  Returns the full ISO 3166-1 alpha-2 list available for broader international validation helpers.
+  """
   @spec get_iso_country_codes() :: [country_code()]
   def get_iso_country_codes, do: @iso_country_codes
 
-  @doc false
+  @doc """
+  Checks whether a code is a valid ISO 3166-1 alpha-2 country code.
+  """
   @spec valid_iso_country_code?(country_code()) :: boolean()
   def valid_iso_country_code?(country_code) when is_binary(country_code),
     do: country_code in @iso_country_codes
