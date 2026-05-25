@@ -2,6 +2,13 @@ defmodule ExSepa.Validation.FieldTest do
   use ExUnit.Case, async: true
   doctest ExSepa.Validation.Field
 
+  describe "ExSepa.Validation.Field.text/2" do
+    test "returns :ok when all fields are valid UTF-8 strings" do
+      assert ExSepa.Validation.Field.text(creditor_name: "Example GmbH", town_name: "Berlin") ==
+               :ok
+    end
+  end
+
   describe "ExSepa.Validation.Field.max_text/3" do
     test "normalizes EPC special characters" do
       assert ExSepa.Validation.Field.max_text(:creditor_name, "Müller & Co%*", 70) ==
@@ -21,6 +28,11 @@ defmodule ExSepa.Validation.FieldTest do
     test "rejects text containing double slash" do
       assert ExSepa.Validation.Field.max_text(:debtor_name, "Berlin // Mitte", 70) ==
                {:error, "debtor_name: Text field must not contain '//'"}
+    end
+
+    test "rejects blank text after trimming" do
+      assert ExSepa.Validation.Field.max_text(:debtor_name, "   ", 70) ==
+               {:error, "debtor_name: Minimum length of 1 characters"}
     end
   end
 
@@ -117,6 +129,21 @@ defmodule ExSepa.Validation.FieldTest do
       assert ExSepa.Validation.Field.creditor_identifier("DE00ZZZ09999999999") ==
                {:error, "creditor_id: invalid creditor identifier check digits"}
     end
-  end
 
+    test "rejects creditor identifiers with unsupported countries" do
+      assert ExSepa.Validation.Field.creditor_identifier("US98ZZZ09999999999") ==
+               {:error, "creditor_id: invalid country code"}
+    end
+
+    test "rejects malformed creditor identifier structure" do
+      assert ExSepa.Validation.Field.creditor_identifier("DEABZZZ09999999999") ==
+               {:error, "creditor_id: invalid creditor identifier structure"}
+    end
+
+    test "rejects creditor identifiers without a country-specific identifier" do
+      assert ExSepa.Validation.Field.creditor_identifier("DE98ZZZ---") ==
+               {:error,
+                "creditor_id: creditor identifier must include a country-specific identifier"}
+    end
+  end
 end

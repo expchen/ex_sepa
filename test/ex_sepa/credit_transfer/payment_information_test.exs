@@ -427,4 +427,49 @@ defmodule ExSepa.CreditTransfer.PaymentInformationTest do
              }) == {:error, "Address is mandatory for non-EEA SEPA country or territory"}
     end
   end
+
+  describe "ExSepa.CreditTransfer.PaymentInformation.validate_requested_execution_date/1" do
+    test "accepts today's date via the SCT convenience wrapper" do
+      assert ExSepa.CreditTransfer.PaymentInformation.validate_requested_execution_date(
+               Date.utc_today()
+             ) == :ok
+    end
+  end
+
+  describe "ExSepa.CreditTransfer.PaymentInformation.validate_requested_execution_date/2" do
+    test "rejects unsupported requested_execution_date types" do
+      assert ExSepa.CreditTransfer.PaymentInformation.validate_requested_execution_date(
+               :sct,
+               "today"
+             ) == {:error, "unsupported requested execution date type"}
+    end
+  end
+
+  describe "ExSepa.CreditTransfer.PaymentInformation.get_optional_data/1" do
+    test "parses optional SCT data through the convenience wrapper" do
+      {:ok, transaction_information} =
+        ExSepa.CreditTransfer.TransactionInformation.new(%{
+          end_to_end_id: example_end_to_end_id(),
+          amount: example_amount(),
+          creditor_name: example_person_name(),
+          creditor_iban: example_eea_iban()
+        })
+
+      assert ExSepa.CreditTransfer.PaymentInformation.get_optional_data(%{
+               debtor_bic: "BANKDEFFXXX",
+               debtor_address: %{town_name: "Berlin", country: "DE"},
+               transaction_information: [transaction_information]
+             }) ==
+               {:ok,
+                %{
+                  instruction_priority: "",
+                  debtor_bic: "BANKDEFFXXX",
+                  debtor_address: %ExSepa.Schema.Address{
+                    town_name: "Berlin",
+                    country: "DE"
+                  },
+                  transaction_information: [transaction_information]
+                }}
+    end
+  end
 end

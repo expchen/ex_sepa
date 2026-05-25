@@ -167,18 +167,15 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
     missing_keys = @enforce_keys -- Map.keys(transaction_information)
 
     if missing_keys == [] do
-      with :ok <-
-             FieldValidation.text(
-               [
-                 {:end_to_end_id, transaction_information[:end_to_end_id]},
-                 {:mandate_id, transaction_information[:mandate_id]},
-                 {:debtor_name, transaction_information[:debtor_name]},
-                 {:debtor_iban, transaction_information[:debtor_iban]}
-               ],
-               "Parameters must be strings."
-             ) do
-        {:error, "Something has gone wrong: #{transaction_information}"}
-      end
+      FieldValidation.text(
+        [
+          {:end_to_end_id, transaction_information[:end_to_end_id]},
+          {:mandate_id, transaction_information[:mandate_id]},
+          {:debtor_name, transaction_information[:debtor_name]},
+          {:debtor_iban, transaction_information[:debtor_iban]}
+        ],
+        "Parameters must be strings."
+      )
     else
       {:error, "missing keys: " <> Macro.to_string(quote do: unquote(missing_keys))}
     end

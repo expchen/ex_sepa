@@ -166,6 +166,31 @@ defmodule ExSepa.Schema.AddressTest do
              }) == {:error, "missing keys: [:country]"}
     end
 
+    test "fail: town_name must be a string" do
+      assert ExSepa.Schema.Address.new(%{
+               town_name: 10115,
+               country: "DE"
+             }) ==
+               {:error, "Parameters must be strings. - town_name: must be UTF-8 encoded binary"}
+    end
+
+    test "fail: country must be a string" do
+      assert ExSepa.Schema.Address.new(%{
+               town_name: "Berlin",
+               country: 49
+             }) ==
+               {:error, "Parameters must be strings. - country: must be UTF-8 encoded binary"}
+    end
+
+    test "fail: optional address fields must be strings" do
+      assert ExSepa.Schema.Address.new(%{
+               town_name: "Berlin",
+               country: "DE",
+               room: 3
+             }) ==
+               {:error, "Parameters must be strings. - room: must be UTF-8 encoded binary"}
+    end
+
     test "fail: non-SEPA ISO country codes are rejected in the current address flow" do
       assert ExSepa.Schema.Address.new(%{
                town_name: "New York",
@@ -205,10 +230,17 @@ defmodule ExSepa.Schema.AddressTest do
     test "serializes structured and hybrid address fields into XML" do
       address = %ExSepa.Schema.Address{
         department: "Ops",
+        sub_department: "Payments",
         street_name: "Unter den Linden",
         building_number: "1",
+        building_name: "Atrium",
+        floor: "3",
+        post_box: "PO123",
+        room: "305",
         post_code: "10117",
         town_name: "Berlin",
+        town_location_name: "Mitte",
+        district_name: "Berlin Center",
         country_sub_division: "Berlin",
         country: "DE",
         address_lines: ["Floor 3", "Reception"]
@@ -220,10 +252,17 @@ defmodule ExSepa.Schema.AddressTest do
         |> generate()
 
       assert xml =~ "<Dept>Ops</Dept>"
+      assert xml =~ "<SubDept>Payments</SubDept>"
       assert xml =~ "<StrtNm>Unter den Linden</StrtNm>"
       assert xml =~ "<BldgNb>1</BldgNb>"
+      assert xml =~ "<BldgNm>Atrium</BldgNm>"
+      assert xml =~ "<Flr>3</Flr>"
+      assert xml =~ "<PstBx>PO123</PstBx>"
+      assert xml =~ "<Room>305</Room>"
       assert xml =~ "<PstCd>10117</PstCd>"
       assert xml =~ "<TwnNm>Berlin</TwnNm>"
+      assert xml =~ "<TwnLctnNm>Mitte</TwnLctnNm>"
+      assert xml =~ "<DstrctNm>Berlin Center</DstrctNm>"
       assert xml =~ "<CtrySubDvsn>Berlin</CtrySubDvsn>"
       assert xml =~ "<Ctry>DE</Ctry>"
       assert xml =~ "<AdrLine>Floor 3</AdrLine>"

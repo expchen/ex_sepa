@@ -63,16 +63,13 @@ defmodule ExSepa.Schema.GroupHeader do
     missing_keys = @enforce_keys -- Map.keys(group_header_map)
 
     if missing_keys == [] do
-      with :ok <-
-             FieldValidation.text(
-               [
-                 {:msg_id, group_header_map[:msg_id]},
-                 {:initiating_party_name, group_header_map[:initiating_party_name]}
-               ],
-               "Parameters must be strings."
-             ) do
-        {:error, "Something has gone wrong: #{group_header_map}"}
-      end
+      FieldValidation.text(
+        [
+          {:msg_id, group_header_map[:msg_id]},
+          {:initiating_party_name, group_header_map[:initiating_party_name]}
+        ],
+        "Parameters must be strings."
+      )
     else
       {:error, "missing keys: " <> Macro.to_string(quote do: unquote(missing_keys))}
     end

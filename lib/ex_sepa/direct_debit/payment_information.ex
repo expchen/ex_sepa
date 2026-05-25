@@ -140,18 +140,15 @@ defmodule ExSepa.DirectDebit.PaymentInformation do
     missing_keys = @enforce_keys -- Map.keys(payment_information)
 
     if missing_keys == [] do
-      with :ok <-
-             FieldValidation.text(
-               [
-                 {:payment_id, payment_information[:payment_id]},
-                 {:creditor_id, payment_information[:creditor_id]},
-                 {:creditor_name, payment_information[:creditor_name]},
-                 {:creditor_iban, payment_information[:creditor_iban]}
-               ],
-               "Parameters must be strings."
-             ) do
-        {:error, "Something has gone wrong: #{payment_information}"}
-      end
+      FieldValidation.text(
+        [
+          {:payment_id, payment_information[:payment_id]},
+          {:creditor_id, payment_information[:creditor_id]},
+          {:creditor_name, payment_information[:creditor_name]},
+          {:creditor_iban, payment_information[:creditor_iban]}
+        ],
+        "Parameters must be strings."
+      )
     else
       {:error, "missing keys: " <> Macro.to_string(quote do: unquote(missing_keys))}
     end

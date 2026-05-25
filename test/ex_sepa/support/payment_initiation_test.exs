@@ -58,7 +58,10 @@ defmodule ExSepa.Support.PaymentInitiationTest do
           ExSepa.CreditTransfer.PaymentInformationError
         )
 
-      assert Enum.map(initiation.payment_information, & &1.payment_id) == ["Pmt-ID-002", "Pmt-ID-001"]
+      assert Enum.map(initiation.payment_information, & &1.payment_id) == [
+               "Pmt-ID-002",
+               "Pmt-ID-001"
+             ]
     end
   end
 
