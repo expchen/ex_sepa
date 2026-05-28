@@ -21,7 +21,7 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
   @typedoc false
   @type t :: %__MODULE__{
           end_to_end_id: String.t(),
-          amount: float(),
+          amount: number(),
           creditor_name: String.t(),
           creditor_address: ExSepa.Schema.Address.t() | nil,
           creditor_iban: String.t(),
@@ -70,7 +70,7 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
   """
   @spec new(%{
           :end_to_end_id => String.t(),
-          :amount => float(),
+          :amount => number(),
           :creditor_name => String.t(),
           :creditor_iban => String.t(),
           optional(atom()) => any()
@@ -82,11 +82,21 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
     case transaction_information do
       %{
         end_to_end_id: end_to_end_id,
+        amount: 0,
+        creditor_name: creditor_name,
+        creditor_iban: creditor_iban
+      }
+      when is_binary(end_to_end_id) and is_binary(creditor_name) and is_binary(creditor_iban) ->
+        {:error,
+         "amount must be a positive number with up to 2 decimal places, e.g. 18.2 or 18.02"}
+
+      %{
+        end_to_end_id: end_to_end_id,
         amount: amount,
         creditor_name: creditor_name,
         creditor_iban: creditor_iban
       }
-      when is_binary(end_to_end_id) and is_float(amount) and is_binary(creditor_name) and
+      when is_binary(end_to_end_id) and is_number(amount) and is_binary(creditor_name) and
              is_binary(creditor_iban) ->
         with {:ok, new_end_to_end_id} <-
                FieldValidation.max_text(:end_to_end_id, end_to_end_id, 35),
@@ -127,14 +137,17 @@ defmodule ExSepa.CreditTransfer.TransactionInformation do
         missing_keys = enforce_keys -- Map.keys(transaction_information)
 
         if missing_keys == [] do
-          FieldValidation.text(
-            [
-              {:end_to_end_id, transaction_information[:end_to_end_id]},
-              {:creditor_name, transaction_information[:creditor_name]},
-              {:creditor_iban, transaction_information[:creditor_iban]}
-            ],
-            "Parameters must be strings."
-          )
+          case FieldValidation.text(
+                 [
+                   {:end_to_end_id, transaction_information[:end_to_end_id]},
+                   {:creditor_name, transaction_information[:creditor_name]},
+                   {:creditor_iban, transaction_information[:creditor_iban]}
+                 ],
+                 "Parameters must be strings."
+               ) do
+            :ok -> FieldValidation.amount(transaction_information[:amount])
+            error -> error
+          end
         else
           {:error, "missing keys: " <> Macro.to_string(quote do: unquote(missing_keys))}
         end

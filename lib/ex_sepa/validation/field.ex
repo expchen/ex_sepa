@@ -270,8 +270,8 @@ defmodule ExSepa.Validation.Field do
       iex> ExSepa.Validation.Field.amount(30.303)
       {:error, "Amount has too many decimal places"}
   """
-  @spec amount(float()) :: :ok | {:error, String.t()}
-  def amount(amount) do
+  @spec amount(number()) :: :ok | {:error, String.t()}
+  def amount(amount) when is_number(amount) do
     if amount <= 0.0 do
       {:error, "The amount must be more then 0.00"}
     else
@@ -288,6 +288,8 @@ defmodule ExSepa.Validation.Field do
       end
     end
   end
+
+  def amount(_amount), do: {:error, "amount must be a number"}
 
   @doc """
   Validates that the due date lies in the future.

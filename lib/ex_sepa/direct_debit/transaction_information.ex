@@ -30,7 +30,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
   @typedoc false
   @type t :: %__MODULE__{
           end_to_end_id: String.t(),
-          amount: float(),
+          amount: number(),
           mandate_id: String.t(),
           mandate_signing_date: Date.t(),
           debtor_name: String.t(),
@@ -86,13 +86,28 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
   """
   @spec new(%{
           :end_to_end_id => binary(),
-          :amount => float(),
+          :amount => number(),
           :mandate_id => binary(),
           :mandate_signing_date => Date.t(),
           :debtor_name => binary(),
           :debtor_iban => binary(),
           optional(atom()) => any()
         }) :: {:error, String.t()} | {:ok, __MODULE__.t()}
+  def new(
+        %{
+          end_to_end_id: end_to_end_id,
+          amount: 0,
+          mandate_id: mandate_id,
+          mandate_signing_date: _mandate_signing_date,
+          debtor_name: debtor_name,
+          debtor_iban: debtor_iban
+        } = _transaction_information
+      )
+      when is_binary(end_to_end_id) and is_binary(mandate_id) and
+             is_binary(debtor_name) and is_binary(debtor_iban) do
+    {:error, "amount must be a positive number with up to 2 decimal places, e.g. 18.2 or 18.02"}
+  end
+
   def new(
         %{
           end_to_end_id: end_to_end_id,
@@ -103,7 +118,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
           debtor_iban: debtor_iban
         } = transaction_information
       )
-      when is_binary(end_to_end_id) and is_float(amount) and is_binary(mandate_id) and
+      when is_binary(end_to_end_id) and is_number(amount) and is_binary(mandate_id) and
              is_binary(debtor_name) and is_binary(debtor_iban) do
     with {:ok, new_end_to_end_id} <- FieldValidation.max_text(:end_to_end_id, end_to_end_id, 35),
          :ok <- FieldValidation.amount(amount),
@@ -129,7 +144,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
          debtor_bic: optional_data.debtor_bic,
          remittance_information: optional_data.remittance_information,
          debtor_address: optional_data.debtor_address
-       }}
+      }}
     end
   end
 
@@ -143,7 +158,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
           debtor_iban: debtor_iban
         } = _transaction_information
       )
-      when is_binary(end_to_end_id) and is_float(amount) and is_binary(mandate_id) and
+      when is_binary(end_to_end_id) and is_number(amount) and is_binary(mandate_id) and
              is_binary(debtor_name) and is_binary(debtor_iban) do
     {:error, "mandate_signing_date must be a date"}
   end
@@ -167,15 +182,18 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
     missing_keys = @enforce_keys -- Map.keys(transaction_information)
 
     if missing_keys == [] do
-      FieldValidation.text(
-        [
-          {:end_to_end_id, transaction_information[:end_to_end_id]},
-          {:mandate_id, transaction_information[:mandate_id]},
-          {:debtor_name, transaction_information[:debtor_name]},
-          {:debtor_iban, transaction_information[:debtor_iban]}
-        ],
-        "Parameters must be strings."
-      )
+      case FieldValidation.text(
+             [
+               {:end_to_end_id, transaction_information[:end_to_end_id]},
+               {:mandate_id, transaction_information[:mandate_id]},
+               {:debtor_name, transaction_information[:debtor_name]},
+               {:debtor_iban, transaction_information[:debtor_iban]}
+             ],
+             "Parameters must be strings."
+           ) do
+        :ok -> FieldValidation.amount(transaction_information[:amount])
+        error -> error
+      end
     else
       {:error, "missing keys: " <> Macro.to_string(quote do: unquote(missing_keys))}
     end

@@ -22,7 +22,7 @@ defmodule ExSepa.CreditTransferInstant.TransactionInformation do
   @typedoc false
   @type t :: %__MODULE__{
           end_to_end_id: String.t(),
-          amount: float(),
+          amount: number(),
           creditor_name: String.t(),
           creditor_address: ExSepa.Schema.Address.t() | nil,
           creditor_iban: String.t(),
@@ -71,7 +71,7 @@ defmodule ExSepa.CreditTransferInstant.TransactionInformation do
   """
   @spec new(%{
           :end_to_end_id => String.t(),
-          :amount => float(),
+          :amount => number(),
           :creditor_name => String.t(),
           :creditor_iban => String.t(),
           optional(atom()) => any()

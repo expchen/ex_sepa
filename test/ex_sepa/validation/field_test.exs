@@ -36,6 +36,39 @@ defmodule ExSepa.Validation.FieldTest do
     end
   end
 
+  describe "ExSepa.Validation.Field.amount/1" do
+    test "accepts positive integers" do
+      assert ExSepa.Validation.Field.amount(100) == :ok
+    end
+
+    test "accepts positive floats with up to two decimal places" do
+      assert ExSepa.Validation.Field.amount(100.25) == :ok
+    end
+
+    test "rejects zero integers and zero floats" do
+      assert ExSepa.Validation.Field.amount(0) == {:error, "The amount must be more then 0.00"}
+      assert ExSepa.Validation.Field.amount(0.0) == {:error, "The amount must be more then 0.00"}
+    end
+
+    test "rejects negative integers" do
+      assert ExSepa.Validation.Field.amount(-10) == {:error, "The amount must be more then 0.00"}
+    end
+
+    test "rejects values with too many decimal places" do
+      assert ExSepa.Validation.Field.amount(30.303) ==
+               {:error, "Amount has too many decimal places"}
+    end
+
+    test "rejects amounts above the maximum" do
+      assert ExSepa.Validation.Field.amount(1_000_000_000) ==
+               {:error, "The amount must be less then 999,999,999.99 euro"}
+    end
+
+    test "rejects non-number input" do
+      assert ExSepa.Validation.Field.amount("100") == {:error, "amount must be a number"}
+    end
+  end
+
   describe "ExSepa.Validation.Field.bic/1" do
     test "accepts 8-character and 11-character BICs" do
       assert ExSepa.Validation.Field.bic("BANKDEFF") == :ok

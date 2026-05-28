@@ -158,7 +158,7 @@ defmodule ExSepa.DirectDebit do
           String.t(),
           %{
             :end_to_end_id => String.t(),
-            :amount => float(),
+            :amount => number(),
             :mandate_id => String.t(),
             :mandate_signing_date => Date.t(),
             :debtor_name => String.t(),

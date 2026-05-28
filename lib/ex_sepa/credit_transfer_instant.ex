@@ -147,7 +147,7 @@ defmodule ExSepa.CreditTransferInstant do
           ExSepa.CreditTransferInstant.t(),
           String.t(),
           %{
-            :amount => float(),
+            :amount => number(),
             :creditor_iban => String.t(),
             :creditor_name => String.t(),
             :end_to_end_id => String.t(),
