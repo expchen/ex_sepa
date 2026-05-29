@@ -160,6 +160,7 @@ defmodule ExSepa.CreditTransfer do
         transaction_information
       )
       when is_binary(payment_id) and is_map(transaction_information) do
+    # TODO: Wire VoP check before add_transaction_information/3.
     ExSepa.Support.PaymentInitiation.add_transaction_information(
       initiation,
       payment_id,

@@ -144,7 +144,7 @@ defmodule ExSepa.DirectDebit.TransactionInformation do
          debtor_bic: optional_data.debtor_bic,
          remittance_information: optional_data.remittance_information,
          debtor_address: optional_data.debtor_address
-      }}
+       }}
     end
   end
 
