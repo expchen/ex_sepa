@@ -244,9 +244,8 @@ defmodule ExSepa.Validation.Field do
 
   defp validate_slash_rules(text) do
     with :ok <- character_set_start(text),
-         :ok <- character_set_end(text),
-         :ok <- character_set_contain(text) do
-      :ok
+         :ok <- character_set_end(text) do
+      character_set_contain(text)
     end
   end
 

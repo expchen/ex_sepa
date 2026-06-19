@@ -168,7 +168,7 @@ defmodule ExSepa.Schema.AddressTest do
 
     test "fail: town_name must be a string" do
       assert ExSepa.Schema.Address.new(%{
-               town_name: 10115,
+               town_name: 10_115,
                country: "DE"
              }) ==
                {:error, "Parameters must be strings. - town_name: must be UTF-8 encoded binary"}

@@ -315,10 +315,13 @@ defmodule ExSepa.Schema.Address do
 
   defp validate_address_line(line, index) do
     FieldValidation.text(
-      [{:"address_lines[#{index}]", line}],
+      [{address_line_field(index), line}],
       "Parameters must be strings."
     )
   end
+
+  defp address_line_field(0), do: :"address_lines[0]"
+  defp address_line_field(1), do: :"address_lines[1]"
 
   defp validate_hybrid_address_lines(town_name, country, optional_data) do
     if is_list(optional_data.address_lines) do

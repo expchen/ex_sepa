@@ -140,15 +140,13 @@ defmodule ExSepa.CreditTransfer.CustomerCreditTransferInitiationV09 do
   @doc false
   @spec xb_document({atom(), any(), any()}) :: String.t()
   def xb_document(content) do
-    document(
-      {:Document,
-       [
-         xmlns: "urn:iso:std:iso:20022:tech:xsd:pain.001.001.09",
-         "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-         "xsi:schemaLocation":
-           "urn:iso:std:iso:20022:tech:xsd:pain.001.001.09 pain.001.001.09.xsd"
-       ], [content]}
-    )
+    {:Document,
+     [
+       xmlns: "urn:iso:std:iso:20022:tech:xsd:pain.001.001.09",
+       "xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+       "xsi:schemaLocation": "urn:iso:std:iso:20022:tech:xsd:pain.001.001.09 pain.001.001.09.xsd"
+     ], [content]}
+    |> document()
     |> generate()
   end
 

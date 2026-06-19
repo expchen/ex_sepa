@@ -1001,17 +1001,18 @@ defmodule ExSepa.DirectDebitTest do
         })
         |> ExSepa.DirectDebit.to_xml()
 
-      assert export_xml(xml, "pain.dd.prebuilt_transactions.test.xml") |> File.exists?()
+      assert File.exists?(export_xml(xml, "pain.dd.prebuilt_transactions.test.xml"))
     end
 
     test "skips payment information groups without transactions" do
       date = Date.utc_today() |> Date.add(3)
 
       xml =
-        ExSepa.DirectDebit.new(%{
+        %{
           msg_id: "Msg-ID-001",
           initiating_party_name: "Initiating Party"
-        })
+        }
+        |> ExSepa.DirectDebit.new()
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Pmt-ID-001",
           due_date: date,
@@ -1072,14 +1073,15 @@ defmodule ExSepa.DirectDebitTest do
         )
         |> ExSepa.DirectDebit.to_xml()
 
-      assert export_xml(xml, "pain.dd.schema.test.xml") |> File.exists?()
+      assert File.exists?(export_xml(xml, "pain.dd.schema.test.xml"))
 
       validate_against_gbic_5_pain_008(xml)
     end
 
     test "Generate XML with 8-character BICs" do
       xml =
-        ExSepa.DirectDebit.new(%{msg_id: "Msg-ID-004", initiating_party_name: "Initiating Party"})
+        %{msg_id: "Msg-ID-004", initiating_party_name: "Initiating Party"}
+        |> ExSepa.DirectDebit.new()
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Payment-ID-0004",
           due_date: ~D[2026-11-14],
@@ -1110,10 +1112,11 @@ defmodule ExSepa.DirectDebitTest do
 
     test "Generate XML without remittance information omits RmtInf and stays schema-valid" do
       xml =
-        ExSepa.DirectDebit.new(%{
+        %{
           msg_id: "Msg-ID-004B",
           initiating_party_name: "Initiating Party"
-        })
+        }
+        |> ExSepa.DirectDebit.new()
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Payment-ID-0004B",
           due_date: Date.utc_today() |> Date.add(5),
@@ -1140,7 +1143,8 @@ defmodule ExSepa.DirectDebitTest do
 
     test "Generate XML with hybrid address lines" do
       xml =
-        ExSepa.DirectDebit.new(%{msg_id: "Msg-ID-005", initiating_party_name: "Initiating Party"})
+        %{msg_id: "Msg-ID-005", initiating_party_name: "Initiating Party"}
+        |> ExSepa.DirectDebit.new()
         |> ExSepa.DirectDebit.add_payment_information(%{
           payment_id: "Payment-ID-0005",
           due_date: Date.utc_today() |> Date.add(5),
@@ -1178,10 +1182,11 @@ defmodule ExSepa.DirectDebitTest do
       assert_raise ExSepa.DirectDebit.TransactionInformationError,
                    "unstructured addresses are not supported; address_lines require both town_name and country",
                    fn ->
-                     ExSepa.DirectDebit.new(%{
+                     %{
                        msg_id: "Msg-ID-007",
                        initiating_party_name: "Initiating Party"
-                     })
+                     }
+                     |> ExSepa.DirectDebit.new()
                      |> ExSepa.DirectDebit.add_payment_information(%{
                        payment_id: "Payment-ID-0007",
                        due_date: Date.utc_today() |> Date.add(5),
@@ -1210,10 +1215,11 @@ defmodule ExSepa.DirectDebitTest do
       assert_raise ExSepa.DirectDebit.PaymentInformationError,
                    "unstructured addresses are not supported; address_lines require both town_name and country",
                    fn ->
-                     ExSepa.DirectDebit.new(%{
+                     %{
                        msg_id: "Msg-ID-008",
                        initiating_party_name: "Initiating Party"
-                     })
+                     }
+                     |> ExSepa.DirectDebit.new()
                      |> ExSepa.DirectDebit.add_payment_information(%{
                        payment_id: "Payment-ID-0008",
                        due_date: Date.utc_today() |> Date.add(5),

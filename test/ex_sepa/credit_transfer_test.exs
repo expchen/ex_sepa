@@ -295,10 +295,11 @@ defmodule ExSepa.CreditTransferTest do
       creditor_iban = example_eea_iban()
 
       credit_transfer =
-        ExSepa.CreditTransfer.new(%{
+        %{
           msg_id: msg_id,
           initiating_party_name: initiating_party_name
-        })
+        }
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: payment_id,
           requested_execution_date: date,
@@ -369,10 +370,11 @@ defmodule ExSepa.CreditTransferTest do
       date = Date.utc_today()
 
       credit_transfer =
-        ExSepa.CreditTransfer.new(%{
+        %{
           msg_id: example_msg_id(),
           initiating_party_name: example_person_name()
-        })
+        }
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: "Pmt-ID-001",
           requested_execution_date: date,
@@ -408,10 +410,11 @@ defmodule ExSepa.CreditTransferTest do
       creditor_name = example_person_name()
 
       credit_transfer =
-        ExSepa.CreditTransfer.new(%{
+        %{
           msg_id: msg_id,
           initiating_party_name: initiating_party_name
-        })
+        }
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: payment_id,
           requested_execution_date: date,
@@ -466,10 +469,11 @@ defmodule ExSepa.CreditTransferTest do
       date = Date.utc_today()
 
       credit_transfer =
-        ExSepa.CreditTransfer.new(%{
+        %{
           msg_id: "Msg-ID-001",
           initiating_party_name: "Initiating Party"
-        })
+        }
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: "Pmt-ID-001",
           requested_execution_date: date,
@@ -580,7 +584,7 @@ defmodule ExSepa.CreditTransferTest do
         })
         |> ExSepa.CreditTransfer.to_xml()
 
-      assert export_xml(xml, "pain.sct.test.xml") |> File.exists?()
+      assert File.exists?(export_xml(xml, "pain.sct.test.xml"))
       assert xml =~ "<CstmrCdtTrfInitn>"
       assert xml =~ "<PmtMtd>TRF</PmtMtd>"
       assert xml =~ "<Cd>SEPA</Cd>"
@@ -649,10 +653,11 @@ defmodule ExSepa.CreditTransferTest do
         })
 
       xml =
-        ExSepa.CreditTransfer.new(%{
+        %{
           msg_id: "Msg-ID-003",
           initiating_party_name: "Initiating Party"
-        })
+        }
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: "Payment-ID-0003",
           requested_execution_date: Date.utc_today(),
@@ -662,7 +667,7 @@ defmodule ExSepa.CreditTransferTest do
         })
         |> ExSepa.CreditTransfer.to_xml()
 
-      assert export_xml(xml, "pain.sct.prebuilt_transactions.test.xml") |> File.exists?()
+      assert File.exists?(export_xml(xml, "pain.sct.prebuilt_transactions.test.xml"))
       assert length(Regex.scan(~r/<CdtTrfTxInf>/, xml)) == 2
       assert xml =~ "<NbOfTxs>2</NbOfTxs>"
       assert xml =~ "<CtrlSum>300.03</CtrlSum>"
@@ -671,10 +676,11 @@ defmodule ExSepa.CreditTransferTest do
 
     test "Generate XML with multiple payment information groups and transactions" do
       xml =
-        ExSepa.CreditTransfer.new(%{
+        %{
           msg_id: "Msg-ID-003A",
           initiating_party_name: "Initiating Party"
-        })
+        }
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: "Payment-ID-0003A",
           requested_execution_date: Date.utc_today(),
@@ -718,10 +724,11 @@ defmodule ExSepa.CreditTransferTest do
 
     test "Generate XML with non-EEA structured addresses" do
       xml =
-        ExSepa.CreditTransfer.new(%{
+        %{
           msg_id: "Msg-ID-004",
           initiating_party_name: "Initiating Party"
-        })
+        }
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: "Payment-ID-0004",
           requested_execution_date: Date.utc_today(),
@@ -749,10 +756,11 @@ defmodule ExSepa.CreditTransferTest do
 
     test "Generate XML with hybrid address lines" do
       xml =
-        ExSepa.CreditTransfer.new(%{
+        %{
           msg_id: "Msg-ID-005",
           initiating_party_name: "Initiating Party"
-        })
+        }
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: "Payment-ID-0005",
           requested_execution_date: Date.utc_today(),
@@ -781,10 +789,11 @@ defmodule ExSepa.CreditTransferTest do
 
     test "Generate XML with 8-character BICs" do
       xml =
-        ExSepa.CreditTransfer.new(%{
+        %{
           msg_id: "Msg-ID-006",
           initiating_party_name: "Initiating Party"
-        })
+        }
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: "Payment-ID-0006",
           requested_execution_date: ~D[2026-11-14],
@@ -808,10 +817,11 @@ defmodule ExSepa.CreditTransferTest do
       assert_raise ExSepa.CreditTransfer.PaymentInformationError,
                    "unstructured addresses are not supported; address_lines require both town_name and country",
                    fn ->
-                     ExSepa.CreditTransfer.new(%{
+                     %{
                        msg_id: "Msg-ID-007",
                        initiating_party_name: "Initiating Party"
-                     })
+                     }
+                     |> ExSepa.CreditTransfer.new()
                      |> ExSepa.CreditTransfer.add_payment_information(%{
                        payment_id: "Payment-ID-0007",
                        requested_execution_date: Date.utc_today(),
@@ -828,10 +838,11 @@ defmodule ExSepa.CreditTransferTest do
       assert_raise ExSepa.CreditTransfer.TransactionInformationError,
                    "unstructured addresses are not supported; address_lines require both town_name and country",
                    fn ->
-                     ExSepa.CreditTransfer.new(%{
+                     %{
                        msg_id: "Msg-ID-008",
                        initiating_party_name: "Initiating Party"
-                     })
+                     }
+                     |> ExSepa.CreditTransfer.new()
                      |> ExSepa.CreditTransfer.add_payment_information(%{
                        payment_id: "Payment-ID-0008",
                        requested_execution_date: Date.utc_today(),
@@ -857,7 +868,8 @@ defmodule ExSepa.CreditTransferTest do
       debtor_name = example_person_name()
 
       xml =
-        ExSepa.CreditTransfer.new(%{msg_id: msg_id, initiating_party_name: i_party})
+        %{msg_id: msg_id, initiating_party_name: i_party}
+        |> ExSepa.CreditTransfer.new()
         |> ExSepa.CreditTransfer.add_payment_information(%{
           payment_id: "Pmt-ID-001",
           requested_execution_date: date,
