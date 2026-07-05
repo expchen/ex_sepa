@@ -145,6 +145,14 @@ defmodule ExSepa.Validation.FieldTest do
       assert ExSepa.Validation.Field.optional_international_text(:creditor_name, "   ", 70) ==
                {:ok, ""}
     end
+
+    test "validates optional international text when present" do
+      assert ExSepa.Validation.Field.optional_international_text(
+               :creditor_name,
+               "  José Álvarez  ",
+               70
+             ) == {:ok, "José Álvarez"}
+    end
   end
 
   describe "ExSepa.Validation.Field.creditor_identifier/1" do
